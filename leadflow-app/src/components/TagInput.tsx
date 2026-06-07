@@ -15,7 +15,6 @@ export default function TagInput({ tags, onAdd, onRemove, placeholder, suggestio
   const [showSuggestions, setShowSuggestions] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // Cierra el dropdown al clickear afuera del componente
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
