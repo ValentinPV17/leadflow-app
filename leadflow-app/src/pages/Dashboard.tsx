@@ -5,25 +5,11 @@ import TagInput from '../components/TagInput'
 import { Send, Zap, LogOut, Building2, Users, Globe, Target, ChevronDown, Loader2, FileText, X, Sparkles } from 'lucide-react'
 
 const COUNTRIES = ['Chile', 'Argentina', 'Colombia', 'México', 'Perú', 'Brasil', 'Estados Unidos', 'España', 'Uruguay', 'Ecuador', 'Bolivia', 'Paraguay', 'Costa Rica', 'Panamá']
-
-const SENIORITIES = [
-  { value: 'c_suite', label: 'C-Suite' },
-  { value: 'vp', label: 'VP' },
-  { value: 'director', label: 'Director' },
-  { value: 'head', label: 'Head' },
-  { value: 'manager', label: 'Manager' },
-  { value: 'senior', label: 'Senior' },
-  { value: 'entry', label: 'Entry Level' },
-]
-
+const SENIORITIES = [{ value: 'c_suite', label: 'C-Suite' }, { value: 'vp', label: 'VP' }, { value: 'director', label: 'Director' }, { value: 'head', label: 'Head' }, { value: 'manager', label: 'Manager' }, { value: 'senior', label: 'Senior' }, { value: 'entry', label: 'Entry Level' }]
 const INDUSTRY_SUGGESTIONS = ['SaaS', 'Marketing & Advertising', 'E-commerce', 'Fintech', 'Healthcare', 'Education', 'Real Estate', 'Logistics', 'Manufacturing', 'Retail', 'Consulting', 'Technology']
 const TITLE_SUGGESTIONS = ['CEO', 'CMO', 'CTO', 'CFO', 'VP Marketing', 'Marketing Manager', 'Brand Manager', 'Growth Manager', 'Head of Marketing', 'Director of Sales', 'Business Development', 'Product Manager']
 
-interface Props {
-  user: User
-  onLogout: () => void
-  onCampaignSent: (payload: CampaignPayload) => void
-}
+interface Props { user: User; onLogout: () => void; onCampaignSent: (payload: CampaignPayload) => void }
 
 export default function Dashboard({ user, onLogout, onCampaignSent }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -31,35 +17,14 @@ export default function Dashboard({ user, onLogout, onCampaignSent }: Props) {
   const [pdfFile, setPdfFile] = useState<File | null>(null)
   const [pdfError, setPdfError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
-
   const [campaignName, setCampaignName] = useState('')
-  const [formData, setFormData] = useState({
-    industries: [] as string[],
-    titles: [] as string[],
-    country: 'Chile',
-    employeesMin: 50,
-    seniorities: ['director', 'manager'],
-  })
+  const [formData, setFormData] = useState({ industries: [] as string[], titles: [] as string[], country: 'Chile', employeesMin: 50, seniorities: ['director', 'manager'] })
 
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || ''
   const canSubmit = formData.titles.length > 0 && formData.industries.length > 0 && formData.country
+  const toggleSeniority = (v: string) => setFormData(prev => ({ ...prev, seniorities: prev.seniorities.includes(v) ? prev.seniorities.filter(s => s !== v) : [...prev.seniorities, v] }))
 
-  const toggleSeniority = (v: string) => {
-    setFormData(prev => ({
-      ...prev,
-      seniorities: prev.seniorities.includes(v)
-        ? prev.seniorities.filter(s => s !== v)
-        : [...prev.seniorities, v]
-    }))
-  }
-
-  const toBase64 = (file: File): Promise<string> =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve((reader.result as string).split(',')[1])
-      reader.onerror = reject
-      reader.readAsDataURL(file)
-    })
+  const toBase64 = (file: File): Promise<string> => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res((r.result as string).split(',')[1]); r.onerror = rej; r.readAsDataURL(file) })
 
   const handlePDFUpload = async (file: File) => {
     if (!file || file.type !== 'application/pdf') { setPdfError('Solo se aceptan archivos PDF'); return }
@@ -67,52 +32,19 @@ export default function Dashboard({ user, onLogout, onCampaignSent }: Props) {
     setPdfFile(file); setPdfError(''); setIsParsingPDF(true)
     try {
       const base64 = await toBase64(file)
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{
-            role: 'user',
-            content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-              { type: 'text', text: 'Analiza este documento y extrae el Ideal Customer Profile (ICP). Responde SOLO con un JSON válido, sin texto adicional, sin backticks, con esta estructura exacta: {"industries":["industria1"],"titles":["cargo1"],"country":"Chile","employeesMin":50,"seniorities":["director","manager"]}. Industrias y cargos en inglés para Apollo. Seniorities válidos: c_suite, vp, director, head, manager, senior, entry.' }
-            ]
-          }]
-        })
-      })
-      const data = await response.json()
-      const text = data.content?.[0]?.text || ''
-      const icp = JSON.parse(text.replace(/```json|```/g, '').trim())
-      setFormData(prev => ({
-        industries: icp.industries?.length ? icp.industries : prev.industries,
-        titles: icp.titles?.length ? icp.titles : prev.titles,
-        country: icp.country || prev.country,
-        employeesMin: icp.employeesMin || prev.employeesMin,
-        seniorities: icp.seniorities?.length ? icp.seniorities : prev.seniorities,
-      }))
-    } catch (e: any) {
-      setPdfError(e.message || 'Error al procesar el PDF'); setPdfFile(null)
-    } finally {
-      setIsParsingPDF(false)
-    }
+      const response = await fetch('/api/parse-icp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pdfBase64: base64 }) })
+      if (!response.ok) throw new Error('Error del servidor al procesar el PDF')
+      const icp = await response.json()
+      setFormData(prev => ({ industries: icp.industries?.length ? icp.industries : prev.industries, titles: icp.titles?.length ? icp.titles : prev.titles, country: icp.country || prev.country, employeesMin: icp.employeesMin || prev.employeesMin, seniorities: icp.seniorities?.length ? icp.seniorities : prev.seniorities }))
+    } catch (e: any) { setPdfError(e.message || 'Error al procesar el PDF'); setPdfFile(null) }
+    finally { setIsParsingPDF(false) }
   }
 
   const handleSubmit = async () => {
     if (!canSubmit) return
     setIsSubmitting(true)
-    const payload: CampaignPayload = {
-      tenant_id: user.email || 'default',
-      icp_run_id: crypto.randomUUID(),
-      campaign_name: campaignName || `Campaña ${new Date().toLocaleDateString('es-CL')}`,
-      icp: { payload: { industries: formData.industries, titles: formData.titles, country: formData.country, employees_min: formData.employeesMin, seniorities: formData.seniorities } },
-      user: { id: user.id, email: user.email || '' }
-    }
-    if (webhookUrl) {
-      try { await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) }
-      catch (e) { console.warn('Webhook not reachable:', e) }
-    }
+    const payload: CampaignPayload = { tenant_id: user.email || 'default', icp_run_id: crypto.randomUUID(), campaign_name: campaignName || `Campaña ${new Date().toLocaleDateString('es-CL')}`, icp: { payload: { industries: formData.industries, titles: formData.titles, country: formData.country, employees_min: formData.employeesMin, seniorities: formData.seniorities } }, user: { id: user.id, email: user.email || '' } }
+    if (webhookUrl) { try { await fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }) } catch (e) { console.warn('Webhook not reachable:', e) } }
     await new Promise(resolve => setTimeout(resolve, 1500))
     setIsSubmitting(false)
     onCampaignSent(payload)
@@ -122,36 +54,17 @@ export default function Dashboard({ user, onLogout, onCampaignSent }: Props) {
     <div className="min-h-screen">
       <header className="border-b border-slate-700/30 bg-slate-900/40 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
-              <Zap size={14} className="text-slate-900" />
-            </div>
-            <span className="text-sm font-bold text-white tracking-tight">LeadFlow</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>
-            <button onClick={onLogout} className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800/50" title="Cerrar sesión">
-              <LogOut size={15} />
-            </button>
-          </div>
+          <div className="flex items-center gap-2.5"><div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center"><Zap size={14} className="text-slate-900" /></div><span className="text-sm font-bold text-white tracking-tight">LeadFlow</span></div>
+          <div className="flex items-center gap-3"><span className="text-xs text-slate-500 hidden sm:block">{user.email}</span><button onClick={onLogout} className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800/50"><LogOut size={15} /></button></div>
         </div>
       </header>
-
       <main className="max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-8 animate-fade-up">
-          <h1 className="text-xl font-bold text-white mb-1">Nueva campaña de leads</h1>
-          <p className="text-sm text-slate-400">Define tu ICP y enviaremos la búsqueda a Apollo automáticamente</p>
-        </div>
-
+        <div className="mb-8"><h1 className="text-xl font-bold text-white mb-1">Nueva campaña de leads</h1><p className="text-sm text-slate-400">Define tu ICP y enviaremos la búsqueda a Apollo automáticamente</p></div>
         <div className="space-y-5">
-          {/* PDF Upload */}
-          <div className="animate-fade-up stagger-1">
-            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5">
-              <Sparkles size={12} className="text-emerald-400" /> Detectar ICP desde PDF <span className="text-slate-600">(opcional)</span>
-            </label>
+          <div>
+            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5"><Sparkles size={12} className="text-emerald-400" /> Detectar ICP desde PDF <span className="text-slate-600">(opcional)</span></label>
             {!pdfFile ? (
-              <div onClick={() => fileInputRef.current?.click()} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handlePDFUpload(f) }}
-                className="border-2 border-dashed border-slate-700/60 hover:border-emerald-500/40 rounded-lg p-5 text-center cursor-pointer transition-all group">
+              <div onClick={() => fileInputRef.current?.click()} onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handlePDFUpload(f) }} className="border-2 border-dashed border-slate-700/60 hover:border-emerald-500/40 rounded-lg p-5 text-center cursor-pointer transition-all group">
                 <FileText size={20} className="mx-auto mb-2 text-slate-600 group-hover:text-emerald-400 transition-colors" />
                 <p className="text-sm text-slate-500 group-hover:text-slate-400 transition-colors">Sube un PDF con tu ICP y lo detectamos automáticamente</p>
                 <p className="text-xs text-slate-600 mt-1">Arrastra o haz click · Max 5MB</p>
@@ -166,76 +79,40 @@ export default function Dashboard({ user, onLogout, onCampaignSent }: Props) {
             )}
             {pdfError && <p className="text-xs text-red-400 mt-1.5">{pdfError}</p>}
           </div>
-
-          {/* Campaign name */}
-          <div className="animate-fade-up stagger-2">
+          <div>
             <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase">Nombre de campaña <span className="text-slate-600">(opcional)</span></label>
-            <input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="Ej: Marketing Chile Q3"
-              className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none placeholder-slate-500 focus:border-emerald-400/50 focus:shadow-[0_0_0_3px_rgba(52,211,153,0.06)] transition-all" />
+            <input value={campaignName} onChange={e => setCampaignName(e.target.value)} placeholder="Ej: Marketing Chile Q3" className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none placeholder-slate-500 focus:border-emerald-400/50 transition-all" />
           </div>
-
-          {/* Industries */}
-          <div className="animate-fade-up stagger-3">
+          <div>
             <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5"><Building2 size={12} /> Industrias <span className="text-emerald-400">*</span></label>
-            <TagInput tags={formData.industries} placeholder="Escribe y presiona Enter..." suggestions={INDUSTRY_SUGGESTIONS}
-              onAdd={t => setFormData(p => ({ ...p, industries: [...p.industries, t] }))}
-              onRemove={i => setFormData(p => ({ ...p, industries: p.industries.filter((_, idx) => idx !== i) }))} />
+            <TagInput tags={formData.industries} placeholder="Escribe y presiona Enter..." suggestions={INDUSTRY_SUGGESTIONS} onAdd={t => setFormData(p => ({ ...p, industries: [...p.industries, t] }))} onRemove={i => setFormData(p => ({ ...p, industries: p.industries.filter((_, idx) => idx !== i) }))} />
           </div>
-
-          {/* Titles */}
-          <div className="animate-fade-up stagger-4">
+          <div>
             <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5"><Users size={12} /> Cargos objetivo <span className="text-emerald-400">*</span></label>
-            <TagInput tags={formData.titles} placeholder="Ej: CMO, Marketing Manager..." suggestions={TITLE_SUGGESTIONS}
-              onAdd={t => setFormData(p => ({ ...p, titles: [...p.titles, t] }))}
-              onRemove={i => setFormData(p => ({ ...p, titles: p.titles.filter((_, idx) => idx !== i) }))} />
+            <TagInput tags={formData.titles} placeholder="Ej: CMO, Marketing Manager..." suggestions={TITLE_SUGGESTIONS} onAdd={t => setFormData(p => ({ ...p, titles: [...p.titles, t] }))} onRemove={i => setFormData(p => ({ ...p, titles: p.titles.filter((_, idx) => idx !== i) }))} />
           </div>
-
-          {/* Country + Employees */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up stagger-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5"><Globe size={12} /> País <span className="text-emerald-400">*</span></label>
-              <div className="relative">
-                <select value={formData.country} onChange={e => setFormData(p => ({ ...p, country: e.target.value }))}
-                  className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none appearance-none focus:border-emerald-400/50 transition-all cursor-pointer">
-                  {COUNTRIES.map(c => <option key={c} value={c} className="bg-slate-800">{c}</option>)}
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-              </div>
+              <div className="relative"><select value={formData.country} onChange={e => setFormData(p => ({ ...p, country: e.target.value }))} className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none appearance-none focus:border-emerald-400/50 transition-all cursor-pointer">{COUNTRIES.map(c => <option key={c} value={c} className="bg-slate-800">{c}</option>)}</select><ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" /></div>
             </div>
             <div>
               <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5"><Target size={12} /> Empleados mínimos</label>
-              <input type="number" value={formData.employeesMin} onChange={e => setFormData(p => ({ ...p, employeesMin: parseInt(e.target.value) || 0 }))}
-                className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none focus:border-emerald-400/50 transition-all font-mono" />
+              <input type="number" value={formData.employeesMin} onChange={e => setFormData(p => ({ ...p, employeesMin: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none focus:border-emerald-400/50 transition-all font-mono" />
             </div>
           </div>
-
-          {/* Seniorities */}
-          <div className="animate-fade-up stagger-5">
+          <div>
             <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase">Nivel de seniority</label>
-            <div className="flex flex-wrap gap-2">
-              {SENIORITIES.map(s => (
-                <button key={s.value} onClick={() => toggleSeniority(s.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${formData.seniorities.includes(s.value) ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.1)]' : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'}`}>
-                  {s.label}
-                </button>
-              ))}
-            </div>
+            <div className="flex flex-wrap gap-2">{SENIORITIES.map(s => (<button key={s.value} onClick={() => toggleSeniority(s.value)} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${formData.seniorities.includes(s.value) ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300' : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'}`}>{s.label}</button>))}</div>
           </div>
-
-          {/* Submit */}
-          <div className="pt-3 animate-fade-up stagger-5">
-            <button onClick={handleSubmit} disabled={!canSubmit || isSubmitting || isParsingPDF}
-              className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${canSubmit && !isSubmitting && !isParsingPDF ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 hover:shadow-xl hover:shadow-emerald-500/20 active:scale-[0.98] cursor-pointer' : 'bg-slate-800/50 text-slate-600 border border-slate-700/30 cursor-not-allowed'}`}>
-              {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Enviando a n8n...</>
-                : isParsingPDF ? <><Loader2 size={16} className="animate-spin" /> Detectando ICP...</>
-                : <><Send size={15} /> Lanzar campaña</>}
+          <div className="pt-3">
+            <button onClick={handleSubmit} disabled={!canSubmit || isSubmitting || isParsingPDF} className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${canSubmit && !isSubmitting && !isParsingPDF ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 hover:shadow-xl hover:shadow-emerald-500/20 active:scale-[0.98] cursor-pointer' : 'bg-slate-800/50 text-slate-600 border border-slate-700/30 cursor-not-allowed'}`}>
+              {isSubmitting ? <><Loader2 size={16} className="animate-spin" /> Enviando a n8n...</> : isParsingPDF ? <><Loader2 size={16} className="animate-spin" /> Detectando ICP...</> : <><Send size={15} /> Lanzar campaña</>}
             </button>
-            {!canSubmit && !isSubmitting && !isParsingPDF && (
-              <p className="text-[11px] text-slate-600 mt-2 text-center">Agrega al menos una industria y un cargo para continuar</p>
-            )}
+            {!canSubmit && !isSubmitting && !isParsingPDF && <p className="text-[11px] text-slate-600 mt-2 text-center">Agrega al menos una industria y un cargo para continuar</p>}
           </div>
         </div>
       </main>
     </div>
   )
-            }
+                                                                                                                                                                                                                                     }
