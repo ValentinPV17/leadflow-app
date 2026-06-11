@@ -13,69 +13,33 @@ export default async function handler(req, res) {
 
     const buffer = Buffer.from(pdfBase64, 'base64');
     const parsed = await pdfParse(buffer);
-    const pdfText = parsed.text?.slice(0, 8000) || '';
+    const pdfText = parsed.text ? parsed.text.slice(0, 8000) : '';
     if (!pdfText.trim()) return res.status(422).json({ error: 'PDF has no readable text' });
 
-    const prompt = [
-      'Analiza este documento y extrae el Ideal Customer Profile (ICP) para una campana de generacion de leads B2B.',
-      '',
-      'Debes retornar UNICAMENTE un JSON valido sin texto adicional, sin backticks, sin comentarios.',
-      '',
-      'Esquema obligatorio:',
-      '{',
-      '  "industries": ["industry1", "industry2"],',
-      '  "excludedIndustries": [],',
-      '  "titles": ["Job Title 1", "Job Title 2"],',
-      '  "excludedTitles": [],',
-      '  "country": "Chile",',
-      '  "employeesMin": 50,',
-      '  "seniorities": ["director", "manager"]',
-      '}',
-      '',
-      'Reglas estrictas:',
-      '- "industries" SIEMPRE debe tener al menos 1 valor. Si el documento no menciona industrias, infiere la mas probable segun los cargos y contexto.',
-      '- Industrias en ingles usando nombres estandar de Apollo como: SaaS, Marketing & Advertising, E-commerce, Fintech, Healthcare, Education, Real Estate, Logistics, Manufacturing, Retail, Consulting, Technology, Financial Services, Media, Telecommunications.',
-      '- "titles" en ingles, usar nombres exactos de cargos como aparecen en LinkedIn.',
-      '- "seniorities" solo valores validos: c_suite, vp, director, head, manager, senior, entry.',
-      '- "country" en ingles (Chile, Argentina, Colombia, etc.).',
-      '- "employeesMin" como numero entero.',
-      '- "excludedIndustries" y "excludedTitles": arrays vacios [] si no se mencionan exclusiones.',
-      '',
-      'Texto del documento:',
-      '',
-      pdfText
-    ].join('
-');
+    const systemMsg = 'Eres un experto en B2B sales. Extraes ICPs de documentos. Respondes SOLO JSON valido sin texto extra.';
+    const userMsg = 'Extrae el ICP de este documento para campana B2B.\n\nResponde SOLO con este JSON sin texto extra:\n{"industries":["SaaS"],"excludedIndustries":[],"titles":["Marketing Manager"],"excludedTitles":[],"country":"Chile","employeesMin":50,"seniorities":["director","manager"]}\n\nReglas:\n- industries minimo 1 valor en ingles estandar: SaaS, Marketing & Advertising, Fintech, Healthcare, Technology, E-commerce, Retail, Education, Logistics, Consulting, Financial Services, Manufacturing\n- Si no se menciona industria infiere por contexto\n- titles en ingles como en LinkedIn\n- seniorities solo valores: c_suite, vp, director, head, manager, senior, entry\n- country en ingles\n- employeesMin numero entero\n\nDocumento:\n' + pdfText;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        max_tokens: 1000,
-        temperature: 0,
-        messages: [{ role: 'user', content: prompt }]
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY },
+      body: JSON.stringify({ model: 'gpt-4o', max_tokens: 800, temperature: 0, messages: [{ role: 'system', content: systemMsg }, { role: 'user', content: userMsg }] })
     });
 
     const data = await response.json();
-    if (!response.ok) return res.status(422).json({ error: data.error?.message || 'OpenAI error' });
+    if (!response.ok) return res.status(422).json({ error: data.error ? data.error.message : 'OpenAI error' });
 
-    const text = data.choices?.[0]?.message?.content || '';
+    const raw = data.choices && data.choices[0] ? data.choices[0].message.content : '';
+    const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
     let icp;
-    try {
-      icp = JSON.parse(text.replace(/```json|```/g, '').trim());
-    } catch {
-      return res.status(422).json({ error: 'Could not parse ICP', raw: text });
-    }
+    try { icp = JSON.parse(clean); } catch(e) { return res.status(422).json({ error: 'Parse failed', raw: raw }); }
 
-    // Garantizar que industries siempre tenga al menos un valor
-    if (!icp.industries || icp.industries.length === 0) {
-      icp.industries = ['Technology'];
-    }
+    if (!icp.industries || !icp.industries.length) icp.industries = ['Technology'];
+    if (!icp.excludedIndustries) icp.excludedIndustries = [];
+    if (!icp.titles) icp.titles = [];
+    if (!icp.excludedTitles) icp.excludedTitles = [];
+    if (!icp.seniorities || !icp.seniorities.length) icp.seniorities = ['director', 'manager'];
+    if (!icp.employeesMin) icp.employeesMin = 50;
+    if (!icp.country) icp.country = 'Chile';
 
     return res.status(200).json(icp);
 
