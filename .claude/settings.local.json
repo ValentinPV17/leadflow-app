@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__visualize__read_me",
+      "mcp__visualize__show_widget",
+      "PowerShell(supabase --version 2>$null)",
+      "PowerShell(npx supabase --version 2>$null)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls \"C:\\\\Users\\\\valen\\\\Desktop\\\\\")"
+    ]
+  }
+}
