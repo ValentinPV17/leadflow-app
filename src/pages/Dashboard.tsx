@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import type { CampaignPayload } from '../App'
 import TagInput from '../components/TagInput'
@@ -6,8 +6,8 @@ import { parseICPFromText } from '../lib/openai'
 import { extractTextFromPDF } from '../lib/pdfExtract'
 import {
   Send, Zap, LogOut, Building2, Users, Globe, Target,
-  Loader2, Sparkles, X, ChevronRight, RotateCcw,
-  FileText, Upload
+  ChevronDown, Loader2, Sparkles, X, ChevronRight, RotateCcw,
+  FileText, Upload, Check
 } from 'lucide-react'
 
 const COUNTRIES = [
@@ -93,6 +93,18 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
     seniorities: ['director', 'manager'],
   })
   const [aiParsed, setAiParsed] = useState(false)
+  const [rangeDropdownOpen, setRangeDropdownOpen] = useState(false)
+  const rangeDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (rangeDropdownRef.current && !rangeDropdownRef.current.contains(e.target as Node)) {
+        setRangeDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || ''
   const canSubmit = formData.titles.length > 0 && formData.industries.length > 0 && formData.countries.length > 0
@@ -424,26 +436,61 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             </div>
           </div>
 
-          {/* Employee ranges */}
-          <div className="animate-fade-up stagger-4">
-            <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase flex items-center gap-1.5">
+          {/* Employee ranges — dropdown */}
+          <div className="animate-fade-up stagger-4 relative z-10" ref={rangeDropdownRef}>
+            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5">
               <Target size={12} /> Rango de empleados
-              <span className="text-slate-600 normal-case font-normal">(seleccioná uno o más)</span>
             </label>
-            <div className="flex flex-wrap gap-2">
-              {EMPLOYEE_RANGES.map(r => (
-                <button
-                  key={r.value}
-                  onClick={() => toggleEmployeeRange(r.value)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
-                    formData.employeeRanges.includes(r.value)
-                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.1)]'
-                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
-                  }`}
-                >
-                  {r.label}
-                </button>
-              ))}
+            <div className="relative">
+              <button
+                onClick={() => setRangeDropdownOpen(o => !o)}
+                className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-sm transition-all focus:border-emerald-400/50 hover:border-slate-500"
+              >
+                <span className={formData.employeeRanges.length ? 'text-white' : 'text-slate-500'}>
+                  {formData.employeeRanges.length === 0
+                    ? 'Seleccionar rangos...'
+                    : formData.employeeRanges.length === EMPLOYEE_RANGES.length
+                      ? 'Todos los rangos'
+                      : EMPLOYEE_RANGES.filter(r => formData.employeeRanges.includes(r.value)).map(r => r.label).join(', ')
+                  }
+                </span>
+                <ChevronDown size={14} className={`text-slate-500 transition-transform duration-200 ${rangeDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {rangeDropdownOpen && (
+                <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700/60 rounded-lg shadow-xl overflow-hidden">
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    {EMPLOYEE_RANGES.map(r => {
+                      const selected = formData.employeeRanges.includes(r.value)
+                      return (
+                        <button
+                          key={r.value}
+                          onClick={() => toggleEmployeeRange(r.value)}
+                          className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-slate-700/50 transition-colors"
+                        >
+                          <div className={`w-4 h-4 rounded flex items-center justify-center border flex-shrink-0 transition-all ${
+                            selected
+                              ? 'bg-emerald-500 border-emerald-500'
+                              : 'border-slate-600 bg-slate-900/50'
+                          }`}>
+                            {selected && <Check size={10} className="text-slate-900 stroke-[3]" />}
+                          </div>
+                          <span className={selected ? 'text-white' : 'text-slate-400'}>{r.label}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="border-t border-slate-700/60 px-3 py-2 flex justify-between items-center">
+                    <span className="text-xs text-slate-500">{formData.employeeRanges.length} seleccionados</span>
+                    <button
+                      onClick={() => setFormData(p => ({ ...p, employeeRanges: formData.employeeRanges.length === EMPLOYEE_RANGES.length ? [] : EMPLOYEE_RANGES.map(r => r.value) }))}
+                      className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors"
+                    >
+                      {formData.employeeRanges.length === EMPLOYEE_RANGES.length ? 'Deseleccionar todo' : 'Seleccionar todo'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
