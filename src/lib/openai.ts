@@ -2,8 +2,19 @@ export interface ParsedICP {
   industries: string[]
   titles: string[]
   countries: string[]
-  employees_min: number
+  employee_ranges: string[]
   seniorities: string[]
+}
+
+const ALL_RANGES = [
+  '1,10', '11,20', '21,50', '51,100', '101,200',
+  '201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000',
+]
+
+function minToRanges(min: number): string[] {
+  const thresholds = [1, 11, 21, 51, 101, 201, 501, 1001, 5001, 10001]
+  const idx = thresholds.findLastIndex(t => min >= t)
+  return ALL_RANGES.slice(Math.max(0, idx))
 }
 
 const SYSTEM_PROMPT = `Eres un asistente experto en ventas B2B y generación de leads.
@@ -69,14 +80,13 @@ export async function parseICPFromText(text: string): Promise<ParsedICP> {
   const content = data.choices?.[0]?.message?.content
   if (!content) throw new Error('Respuesta vacía de OpenAI')
 
-  const parsed = JSON.parse(content) as ParsedICP
+  const raw = JSON.parse(content) as { industries?: string[]; titles?: string[]; countries?: string[]; employees_min?: number; seniorities?: string[] }
 
-  // Ensure arrays exist
   return {
-    industries: parsed.industries || [],
-    titles: parsed.titles || [],
-    countries: parsed.countries?.length ? parsed.countries : ['Chile'],
-    employees_min: parsed.employees_min || 10,
-    seniorities: parsed.seniorities || ['manager', 'director'],
+    industries: raw.industries || [],
+    titles: raw.titles || [],
+    countries: raw.countries?.length ? raw.countries : ['Chile'],
+    employee_ranges: minToRanges(raw.employees_min ?? 10),
+    seniorities: raw.seniorities || ['manager', 'director'],
   }
 }

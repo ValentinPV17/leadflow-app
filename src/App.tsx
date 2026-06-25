@@ -21,7 +21,7 @@ export interface CampaignPayload {
       industries: string[]
       titles: string[]
       countries: string[]
-      employees_min: number
+      employee_ranges: string[]
       seniorities: string[]
     }
   }
@@ -83,7 +83,7 @@ export default function App() {
         industries: payload.icp.payload.industries,
         titles: payload.icp.payload.titles,
         countries: payload.icp.payload.countries,
-        employees_min: payload.icp.payload.employees_min,
+        employee_ranges: payload.icp.payload.employee_ranges,
         seniorities: payload.icp.payload.seniorities,
         page: 1,
         per_page: 100,
@@ -143,7 +143,7 @@ export default function App() {
             industries: payload.icp.payload.industries,
             titles: payload.icp.payload.titles,
             countries: payload.icp.payload.countries,
-            employees_min: payload.icp.payload.employees_min,
+            employee_ranges: payload.icp.payload.employee_ranges,
             seniorities: payload.icp.payload.seniorities,
             status: 'draft',
           })
@@ -197,7 +197,7 @@ export default function App() {
         industries: lastPayload.icp.payload.industries,
         titles: lastPayload.icp.payload.titles,
         countries: lastPayload.icp.payload.countries,
-        employees_min: lastPayload.icp.payload.employees_min,
+        employee_ranges: lastPayload.icp.payload.employee_ranges,
         seniorities: lastPayload.icp.payload.seniorities,
         page,
         per_page: 100,

@@ -6,7 +6,7 @@ import { parseICPFromText } from '../lib/openai'
 import { extractTextFromPDF } from '../lib/pdfExtract'
 import {
   Send, Zap, LogOut, Building2, Users, Globe, Target,
-  ChevronDown, Loader2, Sparkles, X, ChevronRight, RotateCcw,
+  Loader2, Sparkles, X, ChevronRight, RotateCcw,
   FileText, Upload
 } from 'lucide-react'
 
@@ -44,11 +44,24 @@ const AI_SUGGESTIONS = [
   '"Gerentes de marketing en e-commerce de Latinoamérica"',
 ]
 
+const EMPLOYEE_RANGES = [
+  { value: '1,10',         label: '1-10' },
+  { value: '11,20',        label: '11-20' },
+  { value: '21,50',        label: '21-50' },
+  { value: '51,100',       label: '51-100' },
+  { value: '101,200',      label: '101-200' },
+  { value: '201,500',      label: '201-500' },
+  { value: '501,1000',     label: '501-1000' },
+  { value: '1001,5000',    label: '1001-5000' },
+  { value: '5001,10000',   label: '5001-10000' },
+  { value: '10001,100000', label: '10001+' },
+]
+
 interface FormData {
   industries: string[]
   titles: string[]
   countries: string[]
-  employeesMin: number
+  employeeRanges: string[]
   seniorities: string[]
 }
 
@@ -76,7 +89,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
     industries: [],
     titles: [],
     countries: ['Chile'],
-    employeesMin: 50,
+    employeeRanges: ['101,200', '201,500', '501,1000'],
     seniorities: ['director', 'manager'],
   })
   const [aiParsed, setAiParsed] = useState(false)
@@ -94,7 +107,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
         industries: parsed.industries,
         titles: parsed.titles,
         countries: parsed.countries,
-        employeesMin: parsed.employees_min,
+        employeeRanges: parsed.employee_ranges,
         seniorities: parsed.seniorities,
       })
       setAiParsed(true)
@@ -127,7 +140,16 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
     setAiText('')
     setPdfFile(null)
     setMode('ai')
-    setFormData({ industries: [], titles: [], countries: ['Chile'], employeesMin: 50, seniorities: ['director', 'manager'] })
+    setFormData({ industries: [], titles: [], countries: ['Chile'], employeeRanges: ['101,200', '201,500', '501,1000'], seniorities: ['director', 'manager'] })
+  }
+
+  const toggleEmployeeRange = (v: string) => {
+    setFormData(prev => ({
+      ...prev,
+      employeeRanges: prev.employeeRanges.includes(v)
+        ? prev.employeeRanges.filter(r => r !== v)
+        : [...prev.employeeRanges, v],
+    }))
   }
 
   const toggleSeniority = (v: string) => {
@@ -163,7 +185,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           industries: formData.industries,
           titles: formData.titles,
           countries: formData.countries,
-          employees_min: formData.employeesMin,
+          employee_ranges: formData.employeeRanges,
           seniorities: formData.seniorities,
         },
       },
@@ -402,42 +424,46 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             </div>
           </div>
 
-          {/* Employees + Seniority */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-up stagger-4">
-            <div>
-              <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5">
-                <Target size={12} /> Empleados mínimos
-              </label>
-              <div className="relative">
-                <select
-                  value={formData.employeesMin}
-                  onChange={e => setFormData(p => ({ ...p, employeesMin: parseInt(e.target.value) }))}
-                  className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none appearance-none focus:border-emerald-400/50 transition-all cursor-pointer"
+          {/* Employee ranges */}
+          <div className="animate-fade-up stagger-4">
+            <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase flex items-center gap-1.5">
+              <Target size={12} /> Rango de empleados
+              <span className="text-slate-600 normal-case font-normal">(seleccioná uno o más)</span>
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {EMPLOYEE_RANGES.map(r => (
+                <button
+                  key={r.value}
+                  onClick={() => toggleEmployeeRange(r.value)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
+                    formData.employeeRanges.includes(r.value)
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.1)]'
+                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                  }`}
                 >
-                  {[1, 10, 25, 50, 100, 200, 500, 1000].map(n => (
-                    <option key={n} value={n} className="bg-slate-800">{n}+</option>
-                  ))}
-                </select>
-                <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" />
-              </div>
+                  {r.label}
+                </button>
+              ))}
             </div>
-            <div>
-              <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase">Seniority</label>
-              <div className="flex flex-wrap gap-1.5">
-                {SENIORITIES.map(s => (
-                  <button
-                    key={s.value}
-                    onClick={() => toggleSeniority(s.value)}
-                    className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 border ${
-                      formData.seniorities.includes(s.value)
-                        ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                        : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
-                    }`}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+          </div>
+
+          {/* Seniority */}
+          <div className="animate-fade-up stagger-4">
+            <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase">Seniority</label>
+            <div className="flex flex-wrap gap-1.5">
+              {SENIORITIES.map(s => (
+                <button
+                  key={s.value}
+                  onClick={() => toggleSeniority(s.value)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 border ${
+                    formData.seniorities.includes(s.value)
+                      ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
+                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
           </div>
 

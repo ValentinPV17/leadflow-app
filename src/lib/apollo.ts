@@ -22,7 +22,7 @@ export interface ApolloSearchParams {
   industries: string[]
   titles: string[]
   countries: string[]
-  employees_min: number
+  employee_ranges: string[]
   seniorities: string[]
   page?: number
   per_page?: number
@@ -59,16 +59,6 @@ const COUNTRY_MAP: Record<string, string> = {
   'Guatemala': 'Guatemala',
 }
 
-function buildEmployeeRanges(min: number): string[] {
-  if (min <= 1)   return ['1,10', '11,20', '21,50', '51,100', '101,200', '201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000']
-  if (min <= 10)  return ['11,20', '21,50', '51,100', '101,200', '201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000']
-  if (min <= 25)  return ['21,50', '51,100', '101,200', '201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000']
-  if (min <= 50)  return ['51,100', '101,200', '201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000']
-  if (min <= 100) return ['101,200', '201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000']
-  if (min <= 200) return ['201,500', '501,1000', '1001,5000', '5001,10000', '10001,100000']
-  if (min <= 500) return ['501,1000', '1001,5000', '5001,10000', '10001,100000']
-  return ['1001,5000', '5001,10000', '10001,100000']
-}
 
 export async function searchApolloLeads(params: ApolloSearchParams): Promise<ApolloSearchResult> {
   const apiKey = import.meta.env.VITE_APOLLO_API_KEY
@@ -85,6 +75,7 @@ export async function searchApolloLeads(params: ApolloSearchParams): Promise<Apo
 
   if (params.titles.length > 0) body.person_titles = params.titles
   if (mappedCountries.length > 0) body.person_locations = mappedCountries
+  if (params.employee_ranges.length > 0) body.organization_num_employees_ranges = params.employee_ranges
 
   console.log('[Apollo] Request body:', JSON.stringify(body, null, 2))
 
