@@ -1,0 +1,157 @@
+import type { User } from '@supabase/supabase-js'
+import { Zap, LogOut, ArrowLeft } from 'lucide-react'
+import LeadDeck from '../components/LeadDeck'
+import type { Lead } from '../components/LeadCard'
+
+const DEMO_LEADS: Lead[] = [
+  {
+    id: '1',
+    companyName: 'Falabella',
+    contactName: 'Valentina Rojas',
+    title: 'CMO',
+    industry: 'Retail',
+    employeeCount: '10,001+',
+    location: 'Santiago, Chile',
+    matchScore: 92,
+  },
+  {
+    id: '2',
+    companyName: 'Bci',
+    contactName: 'Rodrigo Fuentes',
+    title: 'Director de Marketing Digital',
+    industry: 'Fintech / Banca',
+    employeeCount: '5,001-10,000',
+    location: 'Santiago, Chile',
+    matchScore: 85,
+  },
+  {
+    id: '3',
+    companyName: 'Cornershop',
+    contactName: 'Camila Vásquez',
+    title: 'Head of Growth',
+    industry: 'E-commerce / Delivery',
+    employeeCount: '501-1,000',
+    location: 'Santiago, Chile',
+    matchScore: 78,
+  },
+  {
+    id: '4',
+    companyName: 'Rappi Chile',
+    contactName: 'Diego Morales',
+    title: 'VP Marketing',
+    industry: 'E-commerce / Delivery',
+    employeeCount: '1,001-5,000',
+    location: 'Santiago, Chile',
+    matchScore: 81,
+  },
+  {
+    id: '5',
+    companyName: 'Mercado Libre',
+    contactName: 'Sofía Herrera',
+    title: 'Marketing Manager',
+    industry: 'E-commerce',
+    employeeCount: '10,001+',
+    location: 'Buenos Aires, Argentina',
+    matchScore: 74,
+  },
+  {
+    id: '6',
+    companyName: 'Fintual',
+    contactName: 'Martín Vargas',
+    title: 'Brand Manager',
+    industry: 'Fintech',
+    employeeCount: '51-200',
+    location: 'Santiago, Chile',
+    matchScore: 88,
+  },
+  {
+    id: '7',
+    companyName: 'NotCo',
+    contactName: 'Isidora Pérez',
+    title: 'CMO',
+    industry: 'FoodTech',
+    employeeCount: '201-500',
+    location: 'Santiago, Chile',
+    matchScore: 69,
+  },
+  {
+    id: '8',
+    companyName: 'Betterfly',
+    contactName: 'Felipe Soto',
+    title: 'Director de Producto',
+    industry: 'HR Tech / Salud',
+    employeeCount: '201-500',
+    location: 'Santiago, Chile',
+    matchScore: 76,
+  },
+  {
+    id: '9',
+    companyName: 'Loggi',
+    contactName: 'Ana Torres',
+    title: 'Head of Marketing',
+    industry: 'Logística',
+    employeeCount: '1,001-5,000',
+    location: 'São Paulo, Brasil',
+    matchScore: 63,
+  },
+  {
+    id: '10',
+    companyName: 'Clínica Bupa',
+    contactName: 'Pablo Aguilera',
+    title: 'Gerente de Marketing',
+    industry: 'Salud',
+    employeeCount: '1,001-5,000',
+    location: 'Santiago, Chile',
+    matchScore: 71,
+  },
+]
+
+interface Props {
+  user: User
+  onLogout: () => void
+  onBack: () => void
+}
+
+export default function SwipeLeads({ user, onLogout, onBack }: Props) {
+  return (
+    <div className="min-h-screen bg-[#0d0d1a]">
+      {/* Header */}
+      <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0d0d1a]/80 backdrop-blur-xl">
+        <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBack}
+              className="p-1.5 text-white/40 hover:text-white/70 transition-colors rounded-lg hover:bg-white/5"
+            >
+              <ArrowLeft size={16} />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
+                <Zap size={14} className="text-slate-900" />
+              </div>
+              <span className="text-sm font-bold text-white tracking-tight">Lead Review</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-white/30 hidden sm:block">{user.email}</span>
+            <button
+              onClick={onLogout}
+              className="p-1.5 text-white/30 hover:text-white/60 transition-colors rounded-lg hover:bg-white/5"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-lg mx-auto px-4 pt-8 pb-16">
+        <div className="text-center mb-6">
+          <h1 className="text-white text-xl font-black mb-1">Tus matches de hoy</h1>
+          <p className="text-white/30 text-sm">Deslizá para aceptar o descartar leads</p>
+        </div>
+
+        <LeadDeck leads={DEMO_LEADS} user={user} />
+      </main>
+    </div>
+  )
+}

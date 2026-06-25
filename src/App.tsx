@@ -9,8 +9,9 @@ import Dashboard from './pages/Dashboard'
 import Results from './pages/Results'
 import History from './pages/History'
 import Integrations from './pages/Integrations'
+import SwipeLeads from './pages/SwipeLeads'
 
-export type AppScreen = 'login' | 'dashboard' | 'results' | 'history' | 'integrations'
+export type AppScreen = 'login' | 'dashboard' | 'results' | 'history' | 'integrations' | 'swipe'
 
 export interface CampaignPayload {
   tenant_id: string
@@ -229,6 +230,7 @@ export default function App() {
           onCampaignSent={handleCampaignSent}
           onHistory={() => setScreen('history')}
           onIntegrations={() => setScreen('integrations')}
+          onSwipe={() => setScreen('swipe')}
         />
       )
     case 'results':
@@ -256,6 +258,14 @@ export default function App() {
     case 'integrations':
       return (
         <Integrations
+          user={user!}
+          onLogout={handleLogout}
+          onBack={() => setScreen('dashboard')}
+        />
+      )
+    case 'swipe':
+      return (
+        <SwipeLeads
           user={user!}
           onLogout={handleLogout}
           onBack={() => setScreen('dashboard')}

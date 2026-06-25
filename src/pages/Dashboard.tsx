@@ -7,7 +7,7 @@ import { extractTextFromPDF } from '../lib/pdfExtract'
 import {
   Send, Zap, LogOut, Building2, Users, Globe, Target,
   ChevronDown, Loader2, Sparkles, X, ChevronRight, RotateCcw,
-  FileText, Upload, Check
+  FileText, Upload, Check, Settings, History, SlidersHorizontal
 } from 'lucide-react'
 
 const COUNTRIES = [
@@ -71,11 +71,12 @@ interface Props {
   onCampaignSent: (payload: CampaignPayload) => void
   onHistory: () => void
   onIntegrations: () => void
+  onSwipe: () => void
 }
 
 type Mode = 'ai' | 'manual'
 
-export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, onIntegrations }: Props) {
+export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, onIntegrations, onSwipe }: Props) {
   const [mode, setMode] = useState<Mode>('ai')
   const [aiText, setAiText] = useState('')
   const [isParsing, setIsParsing] = useState(false)
@@ -108,6 +109,14 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
 
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || ''
   const canSubmit = formData.titles.length > 0 && formData.industries.length > 0 && formData.countries.length > 0
+
+  const activeFiltersCount = [
+    formData.industries.length > 0,
+    formData.titles.length > 0,
+    formData.countries.length > 0,
+    formData.employeeRanges.length > 0,
+    formData.seniorities.length > 0,
+  ].filter(Boolean).length
 
   const handleAIParse = async () => {
     if (!aiText.trim()) return
@@ -211,28 +220,38 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="border-b border-slate-700/30 bg-slate-900/40 backdrop-blur-xl sticky top-0 z-30">
+      <header className="border-b border-slate-700/30 bg-slate-900/60 backdrop-blur-xl sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
-              <Zap size={14} className="text-slate-900" />
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <Zap size={15} className="text-slate-900" />
             </div>
             <span className="text-sm font-bold text-white tracking-tight">LeadFlow</span>
           </div>
-          <div className="flex items-center gap-2">
+          <nav className="flex items-center gap-1.5">
+            <button
+              onClick={onSwipe}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-500/25 text-emerald-300 rounded-lg hover:from-emerald-500/25 hover:to-cyan-500/25 transition-all"
+            >
+              <span>✦</span>
+              <span className="hidden sm:inline">Revisar leads</span>
+            </button>
             <button
               onClick={onIntegrations}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 border border-slate-700/50 rounded-lg hover:border-slate-500 hover:text-slate-200 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 rounded-lg hover:bg-slate-800/60 hover:text-slate-200 transition-all"
             >
-              Integraciones
+              <Settings size={13} />
+              <span className="hidden sm:inline">Integraciones</span>
             </button>
             <button
               onClick={onHistory}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 border border-slate-700/50 rounded-lg hover:border-slate-500 hover:text-slate-200 transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 rounded-lg hover:bg-slate-800/60 hover:text-slate-200 transition-all"
             >
-              Historial
+              <History size={13} />
+              <span className="hidden sm:inline">Historial</span>
             </button>
-            <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>
+            <div className="w-px h-4 bg-slate-700/60 mx-1" />
+            <span className="text-xs text-slate-500 hidden sm:block max-w-36 truncate">{user.email}</span>
             <button
               onClick={onLogout}
               className="p-1.5 text-slate-500 hover:text-slate-300 transition-colors rounded-md hover:bg-slate-800/50"
@@ -240,39 +259,60 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             >
               <LogOut size={15} />
             </button>
-          </div>
+          </nav>
         </div>
       </header>
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
 
-        {/* Title */}
+        {/* Title + Step indicator */}
         <div className="animate-fade-up">
           <h1 className="text-xl font-bold text-white mb-1">Nueva campaña de leads</h1>
-          <p className="text-sm text-slate-400">Describí tu cliente ideal en lenguaje natural y la IA configurará la búsqueda automáticamente</p>
+          <p className="text-sm text-slate-400 mb-4">Describí tu cliente ideal y la IA configurará la búsqueda automáticamente</p>
+
+          {/* Step indicator */}
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className={`flex items-center gap-1.5 transition-colors ${!aiParsed ? 'text-emerald-400' : 'text-slate-500'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${!aiParsed ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400' : 'border-slate-700 bg-slate-800 text-slate-500'}`}>1</span>
+              Describe tu ICP
+            </span>
+            <ChevronRight size={12} className="text-slate-700" />
+            <span className={`flex items-center gap-1.5 transition-colors ${aiParsed && !canSubmit ? 'text-emerald-400' : 'text-slate-500'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${aiParsed && !canSubmit ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400' : 'border-slate-700 bg-slate-800 text-slate-500'}`}>2</span>
+              Ajusta filtros
+            </span>
+            <ChevronRight size={12} className="text-slate-700" />
+            <span className={`flex items-center gap-1.5 transition-colors ${canSubmit ? 'text-emerald-400' : 'text-slate-500'}`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold border ${canSubmit ? 'border-emerald-500/50 bg-emerald-500/15 text-emerald-400' : 'border-slate-700 bg-slate-800 text-slate-500'}`}>3</span>
+              Busca
+            </span>
+          </div>
         </div>
 
-        {/* AI Input */}
+        {/* AI Input Card */}
         <div className="animate-fade-up stagger-1">
           <div className={`relative rounded-xl border transition-all duration-300 ${
             mode === 'ai'
-              ? 'border-emerald-500/40 bg-slate-800/60 shadow-[0_0_24px_rgba(52,211,153,0.08)]'
+              ? 'border-emerald-500/40 bg-slate-800/60 shadow-[0_0_32px_rgba(52,211,153,0.08)]'
               : 'border-slate-700/40 bg-slate-800/30'
           }`}>
-            <div className="flex items-center gap-2 px-4 pt-4 pb-2">
-              <Sparkles size={15} className="text-emerald-400 flex-shrink-0" />
+            <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-700/30">
+              <div className="w-6 h-6 rounded-md bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
+                <Sparkles size={12} className="text-emerald-400" />
+              </div>
               <span className="text-xs font-semibold text-emerald-400 tracking-wide uppercase">Búsqueda con IA</span>
+              <span className="text-[10px] text-slate-600 font-normal normal-case ml-1">GPT-4o mini</span>
               {aiParsed && (
                 <button
                   onClick={handleReset}
-                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors"
+                  className="ml-auto flex items-center gap-1 text-xs text-slate-500 hover:text-slate-300 transition-colors bg-slate-800/60 border border-slate-700/40 px-2 py-1 rounded-md"
                 >
                   <RotateCcw size={11} /> Nueva búsqueda
                 </button>
               )}
             </div>
 
-            <div className="px-4 pb-4">
+            <div className="px-4 pb-4 pt-3">
               {/* PDF indicator */}
               {pdfFile && (
                 <div className="flex items-center gap-2 mb-3 bg-slate-700/40 border border-slate-600/40 rounded-lg px-3 py-2">
@@ -322,7 +362,6 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
 
               <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700/40">
                 <div className="flex items-center gap-2">
-                  {/* PDF upload button */}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -338,9 +377,9 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
                   >
                     <Upload size={11} /> Subir PDF
                   </button>
-                  <span className="text-[11px] text-slate-600">
-                    {aiText.length > 0 ? `${aiText.length} chars` : 'GPT-4o mini'}
-                  </span>
+                  {aiText.length > 0 && (
+                    <span className="text-[11px] text-slate-600">{aiText.length} chars</span>
+                  )}
                 </div>
                 <button
                   onClick={handleAIParse}
@@ -363,33 +402,64 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
 
         {/* Parsed result indicator */}
         {aiParsed && (
-          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2 animate-fade-up">
-            <Sparkles size={12} />
+          <div className="flex items-center gap-2 text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-3 py-2.5 animate-fade-up">
+            <div className="w-4 h-4 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles size={10} />
+            </div>
             ICP detectado automáticamente — revisá y ajustá los campos si es necesario
           </div>
         )}
 
-        {/* Manual form — always visible, populated by AI */}
-        <div className="space-y-5">
+        {/* Manual filters — always visible */}
+        <div className="space-y-4">
+
+          {/* Section header */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={14} className="text-slate-500" />
+              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">Filtros de búsqueda</span>
+            </div>
+            {activeFiltersCount > 0 && (
+              <span className="text-[10px] font-bold bg-emerald-500/15 border border-emerald-500/25 text-emerald-400 rounded-full px-2 py-0.5">
+                {activeFiltersCount} activos
+              </span>
+            )}
+          </div>
 
           {/* Campaign name */}
-          <div className="animate-fade-up stagger-2">
-            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase">
-              Nombre de campaña <span className="text-slate-600">(opcional)</span>
-            </label>
+          <div className="animate-fade-up stagger-2 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
+                <FileText size={12} className="text-slate-400" />
+              </div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase">
+                Nombre de campaña
+              </label>
+              <span className="text-[10px] text-slate-600 font-normal normal-case">(opcional)</span>
+            </div>
             <input
               value={campaignName}
               onChange={e => setCampaignName(e.target.value)}
               placeholder="Ej: Marketing Chile Q3"
-              className="w-full px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-white text-sm outline-none placeholder-slate-500 focus:border-emerald-400/50 focus:shadow-[0_0_0_3px_rgba(52,211,153,0.06)] transition-all"
+              className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-600/40 rounded-lg text-white text-sm outline-none placeholder-slate-600 focus:border-emerald-400/50 focus:shadow-[0_0_0_3px_rgba(52,211,153,0.06)] transition-all"
             />
           </div>
 
           {/* Industries */}
-          <div className="animate-fade-up stagger-2">
-            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5">
-              <Building2 size={12} /> Industrias <span className="text-emerald-400">*</span>
-            </label>
+          <div className="animate-fade-up stagger-2 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
+                <Building2 size={12} className="text-slate-400" />
+              </div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1">
+                Industrias <span className="text-emerald-400">*</span>
+              </label>
+              {formData.industries.length > 0 && (
+                <span className="ml-auto text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5">
+                  {formData.industries.length} seleccionadas
+                </span>
+              )}
+            </div>
             <TagInput
               tags={formData.industries}
               placeholder="Escribe y presiona Enter..."
@@ -400,10 +470,20 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Titles */}
-          <div className="animate-fade-up stagger-3">
-            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5">
-              <Users size={12} /> Cargos objetivo <span className="text-emerald-400">*</span>
-            </label>
+          <div className="animate-fade-up stagger-3 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
+                <Users size={12} className="text-slate-400" />
+              </div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1">
+                Cargos objetivo <span className="text-emerald-400">*</span>
+              </label>
+              {formData.titles.length > 0 && (
+                <span className="ml-auto text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5">
+                  {formData.titles.length} seleccionados
+                </span>
+              )}
+            </div>
             <TagInput
               tags={formData.titles}
               placeholder="Ej: CMO, Marketing Manager..."
@@ -413,12 +493,22 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             />
           </div>
 
-          {/* Countries — multi select */}
-          <div className="animate-fade-up stagger-4">
-            <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase flex items-center gap-1.5">
-              <Globe size={12} /> Países <span className="text-emerald-400">*</span>
-              <span className="text-slate-600 normal-case font-normal">(seleccioná uno o más)</span>
-            </label>
+          {/* Countries */}
+          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
+                <Globe size={12} className="text-slate-400" />
+              </div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase flex items-center gap-1">
+                Países <span className="text-emerald-400">*</span>
+              </label>
+              <span className="text-[10px] text-slate-600 font-normal normal-case">(seleccioná uno o más)</span>
+              {formData.countries.length > 0 && (
+                <span className="ml-auto text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5">
+                  {formData.countries.length} seleccionados
+                </span>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
               {COUNTRIES.map(c => (
                 <button
@@ -427,7 +517,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
                     formData.countries.includes(c)
                       ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.1)]'
-                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                      : 'bg-slate-900/40 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
                   }`}
                 >
                   {c}
@@ -436,15 +526,20 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             </div>
           </div>
 
-          {/* Employee ranges — dropdown */}
-          <div className="animate-fade-up stagger-4 relative z-10" ref={rangeDropdownRef}>
-            <label className="text-xs font-medium text-slate-400 mb-1.5 block tracking-wide uppercase flex items-center gap-1.5">
-              <Target size={12} /> Rango de empleados
-            </label>
-            <div className="relative">
+          {/* Employee ranges */}
+          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
+                <Target size={12} className="text-slate-400" />
+              </div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase">
+                Rango de empleados
+              </label>
+            </div>
+            <div className="relative z-10" ref={rangeDropdownRef}>
               <button
                 onClick={() => setRangeDropdownOpen(o => !o)}
-                className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-800/50 border border-slate-600/50 rounded-lg text-sm transition-all focus:border-emerald-400/50 hover:border-slate-500"
+                className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-900/50 border border-slate-600/40 rounded-lg text-sm transition-all hover:border-slate-500 focus:border-emerald-400/50"
               >
                 <span className={formData.employeeRanges.length ? 'text-white' : 'text-slate-500'}>
                   {formData.employeeRanges.length === 0
@@ -495,17 +590,27 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Seniority */}
-          <div className="animate-fade-up stagger-4">
-            <label className="text-xs font-medium text-slate-400 mb-2 block tracking-wide uppercase">Seniority</label>
-            <div className="flex flex-wrap gap-1.5">
+          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
+                <Users size={12} className="text-slate-400" />
+              </div>
+              <label className="text-xs font-semibold text-slate-300 tracking-wide uppercase">Seniority</label>
+              {formData.seniorities.length > 0 && (
+                <span className="ml-auto text-[10px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded px-1.5 py-0.5">
+                  {formData.seniorities.length} seleccionados
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
               {SENIORITIES.map(s => (
                 <button
                   key={s.value}
                   onClick={() => toggleSeniority(s.value)}
-                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all duration-200 border ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
                     formData.seniorities.includes(s.value)
                       ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-300'
-                      : 'bg-slate-800/30 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
+                      : 'bg-slate-900/40 border-slate-700/50 text-slate-400 hover:border-slate-500 hover:text-slate-300'
                   }`}
                 >
                   {s.label}
@@ -519,16 +624,25 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             <button
               onClick={handleSubmit}
               disabled={!canSubmit || isSubmitting}
-              className={`w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${
+              className={`w-full py-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2.5 transition-all duration-300 ${
                 canSubmit && !isSubmitting
-                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 hover:shadow-xl hover:shadow-emerald-500/20 active:scale-[0.98] cursor-pointer'
+                  ? 'bg-gradient-to-r from-emerald-500 to-cyan-500 text-slate-900 hover:shadow-2xl hover:shadow-emerald-500/25 hover:scale-[1.01] active:scale-[0.99] cursor-pointer'
                   : 'bg-slate-800/50 text-slate-600 border border-slate-700/30 cursor-not-allowed'
               }`}
             >
-              {isSubmitting
-                ? <><Loader2 size={16} className="animate-spin" /> Buscando en Apollo...</>
-                : <><Send size={15} /> Buscar leads en Apollo</>
-              }
+              {isSubmitting ? (
+                <><Loader2 size={17} className="animate-spin" /> Buscando en Apollo...</>
+              ) : (
+                <>
+                  <Send size={16} />
+                  Buscar leads en Apollo
+                  {activeFiltersCount > 0 && canSubmit && (
+                    <span className="ml-1 text-[10px] font-bold bg-slate-900/30 rounded-full px-2 py-0.5">
+                      {activeFiltersCount} filtros
+                    </span>
+                  )}
+                </>
+              )}
             </button>
             {!canSubmit && !isSubmitting && (
               <p className="text-[11px] text-slate-600 mt-2 text-center">
