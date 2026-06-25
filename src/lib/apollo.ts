@@ -72,8 +72,7 @@ function buildEmployeeRanges(min: number): string[] {
 
 export async function searchApolloLeads(params: ApolloSearchParams): Promise<ApolloSearchResult> {
   const apiKey = import.meta.env.VITE_APOLLO_API_KEY
-  const isDev = import.meta.env.DEV
-  const baseUrl = isDev ? '/api/apollo' : 'https://api.apollo.io'
+  const baseUrl = '/api/apollo'
 
   const mappedCountries = params.countries.map(c => COUNTRY_MAP[c] ?? c)
 
