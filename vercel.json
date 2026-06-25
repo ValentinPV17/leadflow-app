@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/api/apollo/(.*)", "destination": "/api/apollo" },
+    { "source": "/api/hubspot/(.*)", "destination": "/api/hubspot" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

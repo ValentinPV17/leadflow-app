@@ -1,9 +1,8 @@
-const baseUrl = (isDev: boolean) => isDev ? '/api/hubspot' : 'https://api.hubapi.com'
+const baseUrl = '/api/hubspot'
 
 export async function testHubSpotConnection(apiKey: string): Promise<boolean> {
-  const isDev = import.meta.env.DEV
   try {
-    const res = await fetch(`${baseUrl(isDev)}/crm/v3/objects/contacts?limit=1`, {
+    const res = await fetch(`${baseUrl}/crm/v3/objects/contacts?limit=1`, {
       headers: { Authorization: `Bearer ${apiKey}` },
     })
     return res.ok
@@ -14,7 +13,6 @@ export async function testHubSpotConnection(apiKey: string): Promise<boolean> {
 
 export async function getHubSpotExistingEmails(apiKey: string, emails: string[]): Promise<Set<string>> {
   if (emails.length === 0) return new Set()
-  const isDev = import.meta.env.DEV
   const existing = new Set<string>()
 
   // HubSpot search allows max 100 filter values per request
@@ -22,7 +20,7 @@ export async function getHubSpotExistingEmails(apiKey: string, emails: string[])
   for (let i = 0; i < emails.length; i += BATCH) {
     const batch = emails.slice(i, i + BATCH)
     try {
-      const res = await fetch(`${baseUrl(isDev)}/crm/v3/objects/contacts/search`, {
+      const res = await fetch(`${baseUrl}/crm/v3/objects/contacts/search`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
