@@ -29,18 +29,33 @@ export interface CampaignPayload {
   user: { id: string; email: string }
 }
 
+function loadCached<T>(key: string): T | null {
+  try { return JSON.parse(localStorage.getItem(key) ?? 'null') } catch { return null }
+}
+function saveCache(key: string, val: unknown) {
+  try { localStorage.setItem(key, JSON.stringify(val)) } catch {}
+}
+function clearCache() {
+  localStorage.removeItem('lf_result')
+  localStorage.removeItem('lf_payload')
+}
+
 export default function App() {
   const [screen, setScreen] = useState<AppScreen>('login')
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
-  const [lastPayload, setLastPayload] = useState<CampaignPayload | null>(null)
-  const [apolloResult, setApolloResult] = useState<ApolloSearchResult | null>(null)
+  const [lastPayload, setLastPayload] = useState<CampaignPayload | null>(() => loadCached('lf_payload'))
+  const [apolloResult, setApolloResult] = useState<ApolloSearchResult | null>(() => loadCached('lf_result'))
   const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) setScreen('dashboard')
+      // If we have cached results, go straight to results screen
+      if (session?.user) {
+        const cached = loadCached<ApolloSearchResult>('lf_result')
+        setScreen(cached ? 'results' : 'dashboard')
+      }
       setLoading(false)
     })
 
@@ -56,6 +71,9 @@ export default function App() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
+    clearCache()
+    setApolloResult(null)
+    setLastPayload(null)
     setUser(null)
     setScreen('login')
   }
@@ -104,6 +122,8 @@ export default function App() {
       }
 
       setApolloResult(result)
+      saveCache('lf_result', result)
+      saveCache('lf_payload', payload)
 
       // Persist campaign to Supabase
       const icpSummary = [
@@ -205,6 +225,7 @@ export default function App() {
         per_page: 100,
       })
       setApolloResult(result)
+      saveCache('lf_result', result)
     } catch (e) {
       console.error('Apollo page load failed:', e)
     } finally {

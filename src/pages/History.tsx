@@ -13,7 +13,6 @@ interface Campaign {
   industries: string[]
   titles: string[]
   countries: string[]
-  employees_min: number
   seniorities: string[]
   status: string
   created_at: string

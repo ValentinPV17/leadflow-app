@@ -66,8 +66,11 @@ function getInitials(firstName: string, lastName?: string | null) {
   return first + last || '?'
 }
 
+type Filter = 'all' | 'account' | 'new' | 'hubspot'
+
 export default function Results({ user, payload, result, isLoading, onLoadPage, onNewCampaign, onHistory, onLogout, onSwipe }: Props) {
   const [currentPage, setCurrentPage] = useState(result.page)
+  const [filter, setFilter] = useState<Filter>('all')
   const totalPages = Math.ceil(result.total / result.per_page)
   const { icp } = payload
 
@@ -81,6 +84,13 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
   const emailPct = result.leads.length > 0 ? Math.round((emailCount / result.leads.length) * 100) : 0
   const savedCount = result.savedCount ?? result.leads.filter(l => l.isFromAccount).length
   const newCount = result.newCount ?? (result.leads.length - savedCount)
+
+  const filteredLeads = result.leads.filter(l => {
+    if (filter === 'account') return l.isFromAccount
+    if (filter === 'new') return !l.isFromAccount
+    if (filter === 'hubspot') return (l as any).inHubSpot
+    return true
+  })
 
   return (
     <div className="min-h-screen">
@@ -203,6 +213,33 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
 
         {/* Table */}
         <div className="animate-fade-up stagger-2 bg-slate-800/30 border border-slate-700/40 rounded-xl overflow-hidden">
+          {/* Filter tabs */}
+          {!isLoading && result.leads.length > 0 && (
+            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-slate-700/40 bg-slate-900/40">
+              {([
+                { key: 'all', label: `Todos (${result.leads.length})` },
+                { key: 'account', label: `Tu cuenta (${savedCount})`, color: 'cyan' },
+                { key: 'new', label: `Nuevos (${newCount})`, color: 'violet' },
+                { key: 'hubspot', label: `HubSpot (${hubspotCount})`, color: 'orange' },
+              ] as { key: Filter, label: string, color?: string }[]).map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setFilter(f.key)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filter === f.key
+                      ? f.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                        : f.color === 'violet' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                        : f.color === 'orange' ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                        : 'bg-slate-700/60 text-white border border-slate-600/50'
+                      : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 border border-transparent'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+
           {isLoading ? (
             <div className="flex items-center justify-center py-20">
               <Loader2 size={24} className="animate-spin text-emerald-400" />
@@ -225,7 +262,7 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
                   </tr>
                 </thead>
                 <tbody>
-                  {result.leads.map((lead, i) => {
+                  {filteredLeads.map((lead, i) => {
                     const displayName = lead.name || `${lead.first_name} ${lead.last_name || lead.last_name_obfuscated || ''}`.trim()
                     const avatarColor = getAvatarColor(lead.first_name || displayName)
                     const initials = getInitials(lead.first_name, lead.last_name || lead.last_name_obfuscated)
