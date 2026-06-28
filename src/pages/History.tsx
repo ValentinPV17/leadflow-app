@@ -394,23 +394,6 @@ export default function History({ user, onLogout, onNewCampaign, onRerunCampaign
                             </span>
                           </div>
 
-                          {/* Email progress bar */}
-                          {(c.lead_count ?? 0) > 0 && (
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[10px] text-slate-600 flex items-center gap-1">
-                                  <Mail size={9} /> Cobertura de email estimada
-                                </span>
-                                <span className="text-[10px] text-emerald-500">{emailRatioPct}%</span>
-                              </div>
-                              <div className="h-1 bg-slate-700/40 rounded-full overflow-hidden">
-                                <div
-                                  className="h-full bg-gradient-to-r from-emerald-500/60 to-cyan-500/60 rounded-full transition-all duration-700"
-                                  style={{ width: `${emailRatioPct}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
                         </div>
                         <ChevronRight size={16} className="text-slate-600 group-hover:text-slate-400 flex-shrink-0 mt-1 transition-colors group-hover:translate-x-0.5 transition-transform" />
                       </div>
