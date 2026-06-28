@@ -8,6 +8,8 @@ import { calculateMatchScore, formatEmployeeCount } from '../lib/matchScore'
 
 function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']): Lead {
   const domain = lead.organization?.primary_domain
+    || lead.organization?.website_url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
+    || null
   return {
     id: lead.id,
     companyName: lead.organization?.name ?? 'Empresa desconocida',

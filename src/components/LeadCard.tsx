@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion'
 import { MapPin, Users, Briefcase, Zap, X, Heart, Star } from 'lucide-react'
 
@@ -60,6 +60,7 @@ function ScorePill({ score }: { score: number }) {
 }
 
 export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, onStar }: Props) {
+  const [logoFailed, setLogoFailed] = useState(false)
   const x = useMotionValue(0)
   const controls = useAnimation()
   const constraintsRef = useRef(null)
@@ -159,21 +160,13 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, 
 
         {/* Logo / Avatar central */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {lead.logoUrl ? (
-            <div
-              className="w-28 h-28 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10 bg-white/5 overflow-hidden"
-            >
+          {lead.logoUrl && !logoFailed ? (
+            <div className="w-28 h-28 rounded-2xl flex items-center justify-center shadow-2xl bg-white overflow-hidden">
               <img
                 src={lead.logoUrl}
                 alt={lead.companyName}
-                className="w-20 h-20 object-contain"
-                onError={e => {
-                  const target = e.currentTarget
-                  target.style.display = 'none'
-                  const parent = target.parentElement!
-                  parent.style.background = `linear-gradient(135deg, ${accent}44, ${accent}22)`
-                  parent.innerHTML = `<span style="color:${accent};font-size:2.5rem;font-weight:900;">${initials}</span>`
-                }}
+                className="w-full h-full object-contain p-3"
+                onError={() => setLogoFailed(true)}
               />
             </div>
           ) : (
