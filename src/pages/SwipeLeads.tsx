@@ -158,7 +158,7 @@ export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payloa
               <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
                 <Zap size={14} className="text-slate-900" />
               </div>
-              <span className="text-sm font-bold text-white tracking-tight">Lead Review</span>
+              <span className="text-sm font-bold text-white tracking-tight">Match<span className="text-emerald-400">:</span></span>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -175,8 +175,10 @@ export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payloa
 
       <main className="w-full max-w-xl mx-auto px-4 pt-8 pb-16">
         <div className="text-center mb-6">
-          <h1 className="text-white text-xl font-black mb-1">Tus matches de hoy</h1>
-          <p className="text-white/30 text-sm">Deslizá para aceptar o descartar leads</p>
+          <h1 className="text-white text-2xl font-black mb-1">
+            Match<span className="text-emerald-400">:</span>
+          </h1>
+          <p className="text-white/30 text-sm">← Descartar &nbsp;·&nbsp; ★ Super match &nbsp;·&nbsp; Aceptar →</p>
         </div>
 
         <LeadDeck leads={leads} user={user} />

@@ -16,24 +16,32 @@ export default function LeadDeck({ leads, user }: Props) {
   const [acceptedCount, setAcceptedCount] = useState(0)
   const [rejectedCount, setRejectedCount] = useState(0)
 
-  const saveReview = async (leadId: string, action: 'accepted' | 'rejected') => {
-    await supabase.from('lead_reviews').insert({
+  const saveReview = (leadId: string, action: 'accepted' | 'rejected') => {
+    supabase.from('lead_reviews').insert({
       lead_id: leadId,
       user_id: user.id,
       action,
       reviewed_at: new Date().toISOString(),
+    }).then(({ error }) => {
+      if (error) console.error('[LeadReview] Supabase error:', error.message)
     })
   }
 
-  const handleAccept = async (id: string) => {
-    await saveReview(id, 'accepted')
+  const handleAccept = (id: string) => {
+    saveReview(id, 'accepted')
     setAcceptedCount(c => c + 1)
     setQueue(q => q.filter(l => l.id !== id))
   }
 
-  const handleReject = async (id: string) => {
-    await saveReview(id, 'rejected')
+  const handleReject = (id: string) => {
+    saveReview(id, 'rejected')
     setRejectedCount(c => c + 1)
+    setQueue(q => q.filter(l => l.id !== id))
+  }
+
+  const handleStar = (id: string) => {
+    saveReview(id, 'accepted')
+    setAcceptedCount(c => c + 1)
     setQueue(q => q.filter(l => l.id !== id))
   }
 
@@ -98,6 +106,7 @@ export default function LeadDeck({ leads, user }: Props) {
               stackIndex={i}
               onAccept={handleAccept}
               onReject={handleReject}
+              onStar={handleStar}
             />
           ))}
         </AnimatePresence>

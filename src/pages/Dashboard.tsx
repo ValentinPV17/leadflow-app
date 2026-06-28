@@ -236,7 +236,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-500/25 text-emerald-300 rounded-lg hover:from-emerald-500/25 hover:to-cyan-500/25 transition-all"
             >
               <span>✦</span>
-              <span className="hidden sm:inline">Revisar leads</span>
+              <span className="hidden sm:inline">Match:</span>
             </button>
             <button
               onClick={onIntegrations}

@@ -113,7 +113,7 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               disabled={result.leads.length === 0}
               className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs font-medium rounded-lg hover:bg-violet-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              ✦ Revisar leads
+              ✦ Match:
             </button>
             <div className="w-px h-4 bg-slate-700/60 mx-0.5" />
             <span className="text-xs text-slate-500 hidden sm:block">{user.email}</span>

@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion'
-import { MapPin, Users, Briefcase, Zap } from 'lucide-react'
+import { MapPin, Users, Briefcase, Zap, X, Heart, Star } from 'lucide-react'
 
 export type Lead = {
   id: string
@@ -20,73 +20,88 @@ interface Props {
   stackIndex: number
   onAccept: (id: string) => void
   onReject: (id: string) => void
+  onStar?: (id: string) => void
 }
 
-function ScoreBadge({ score }: { score: number }) {
-  const color =
-    score >= 80 ? 'from-emerald-400 to-green-500' :
-    score >= 60 ? 'from-yellow-400 to-amber-500' :
-    'from-orange-400 to-red-500'
+const CARD_GRADIENTS = [
+  ['#1a1a3e', '#2d1b4e', '#1e3a5f'],
+  ['#1e2a1e', '#1a3a2e', '#0d2233'],
+  ['#2a1a1e', '#3d1a2e', '#1f1040'],
+  ['#1a2a3a', '#0d2040', '#1a3050'],
+  ['#2a1a2a', '#3a1040', '#1a1a3a'],
+]
 
+function getGradient(name: string) {
+  const idx = name.charCodeAt(0) % CARD_GRADIENTS.length
+  const [c1, c2, c3] = CARD_GRADIENTS[idx]
+  return `linear-gradient(145deg, ${c1} 0%, ${c2} 50%, ${c3} 100%)`
+}
+
+function getInitials(name: string) {
+  return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase()
+}
+
+function getAccentColor(name: string) {
+  const accents = ['#34d399', '#60a5fa', '#a78bfa', '#f472b6', '#fb923c']
+  return accents[name.charCodeAt(0) % accents.length]
+}
+
+function ScorePill({ score }: { score: number }) {
+  const bg = score >= 80 ? '#34d399' : score >= 60 ? '#fbbf24' : '#f87171'
   return (
-    <div className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gradient-to-r ${color} shadow-lg`}>
-      <Zap size={12} className="text-white fill-white" />
-      <span className="text-white text-xs font-bold tracking-wide">{score}% match</span>
+    <div
+      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full shadow-lg"
+      style={{ backgroundColor: `${bg}22`, border: `1px solid ${bg}55` }}
+    >
+      <Zap size={11} style={{ color: bg }} fill={bg} />
+      <span className="text-xs font-bold" style={{ color: bg }}>{score}%</span>
     </div>
   )
 }
 
-function LogoPlaceholder({ name }: { name: string }) {
-  const colors = [
-    'from-violet-500 to-purple-600',
-    'from-blue-500 to-cyan-600',
-    'from-emerald-500 to-teal-600',
-    'from-orange-500 to-amber-600',
-    'from-pink-500 to-rose-600',
-  ]
-  const color = colors[name.charCodeAt(0) % colors.length]
-  return (
-    <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${color} flex items-center justify-center shadow-lg flex-shrink-0`}>
-      <span className="text-white text-xl font-bold">{name[0].toUpperCase()}</span>
-    </div>
-  )
-}
-
-export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }: Props) {
+export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, onStar }: Props) {
   const x = useMotionValue(0)
   const controls = useAnimation()
   const constraintsRef = useRef(null)
 
-  const rotate = useTransform(x, [-200, 0, 200], [-18, 0, 18])
-  const acceptOpacity = useTransform(x, [0, 100], [0, 1])
-  const rejectOpacity = useTransform(x, [-100, 0], [1, 0])
-  const cardOpacity = useTransform(x, [-300, -200, 0, 200, 300], [0, 1, 1, 1, 0])
+  const rotate = useTransform(x, [-220, 0, 220], [-14, 0, 14])
+  const acceptOpacity = useTransform(x, [20, 120], [0, 1])
+  const rejectOpacity = useTransform(x, [-120, -20], [1, 0])
+  const cardOpacity = useTransform(x, [-320, -200, 0, 200, 320], [0, 1, 1, 1, 0])
 
-  const scale = isTop ? 1 : 1 - stackIndex * 0.04
-  const translateY = isTop ? 0 : stackIndex * 12
+  const scale = isTop ? 1 : 1 - stackIndex * 0.045
+  const translateY = isTop ? 0 : stackIndex * 14
 
   const handleDragEnd = async (_: unknown, info: { offset: { x: number } }) => {
-    const threshold = 120
-    if (info.offset.x > threshold) {
-      await controls.start({ x: 600, opacity: 0, transition: { duration: 0.35 } })
+    if (info.offset.x > 110) {
+      await controls.start({ x: 700, opacity: 0, transition: { duration: 0.3 } })
       onAccept(lead.id)
-    } else if (info.offset.x < -threshold) {
-      await controls.start({ x: -600, opacity: 0, transition: { duration: 0.35 } })
+    } else if (info.offset.x < -110) {
+      await controls.start({ x: -700, opacity: 0, transition: { duration: 0.3 } })
       onReject(lead.id)
     } else {
-      controls.start({ x: 0, transition: { type: 'spring', stiffness: 300, damping: 20 } })
+      controls.start({ x: 0, transition: { type: 'spring', stiffness: 280, damping: 22 } })
     }
   }
 
   const triggerAccept = async () => {
-    await controls.start({ x: 600, opacity: 0, transition: { duration: 0.35 } })
+    await controls.start({ x: 700, opacity: 0, transition: { duration: 0.3 } })
     onAccept(lead.id)
   }
 
   const triggerReject = async () => {
-    await controls.start({ x: -600, opacity: 0, transition: { duration: 0.35 } })
+    await controls.start({ x: -700, opacity: 0, transition: { duration: 0.3 } })
     onReject(lead.id)
   }
+
+  const triggerStar = async () => {
+    await controls.start({ y: -700, opacity: 0, transition: { duration: 0.3 } })
+    onStar?.(lead.id)
+    onAccept(lead.id)
+  }
+
+  const accent = getAccentColor(lead.companyName)
+  const initials = getInitials(lead.contactName)
 
   return (
     <motion.div
@@ -98,24 +113,28 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }
         scale,
         y: translateY,
         zIndex: 10 - stackIndex,
+        originY: 1,
       }}
       animate={isTop ? controls : {}}
       drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.9}
+      dragElastic={0.85}
       onDragEnd={isTop ? handleDragEnd : undefined}
-      className="absolute inset-x-0 mx-auto w-[85vw] max-w-sm cursor-grab active:cursor-grabbing select-none"
+      className="absolute inset-x-0 mx-auto w-[85vw] max-w-sm select-none"
     >
-      <div className="relative bg-[#1a1a2e] border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-
+      {/* CARD */}
+      <div
+        className="relative rounded-[28px] overflow-hidden shadow-2xl cursor-grab active:cursor-grabbing"
+        style={{ height: '62vh', minHeight: 460, background: getGradient(lead.companyName) }}
+      >
         {/* Accept overlay */}
         {isTop && (
           <motion.div
             style={{ opacity: acceptOpacity }}
-            className="absolute inset-0 bg-emerald-500/20 z-10 flex items-center justify-center rounded-3xl border-2 border-emerald-400 pointer-events-none"
+            className="absolute inset-0 z-20 pointer-events-none rounded-[28px] border-[3px] border-emerald-400"
           >
-            <div className="bg-emerald-500 text-white font-black text-3xl px-6 py-2 rounded-2xl rotate-[-15deg] shadow-xl">
-              MATCH! ✓
+            <div className="absolute top-8 left-6 bg-emerald-500 text-white font-black text-2xl px-5 py-2 rounded-2xl rotate-[-20deg] shadow-xl tracking-wide">
+              MATCH ✓
             </div>
           </motion.div>
         )}
@@ -124,108 +143,107 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }
         {isTop && (
           <motion.div
             style={{ opacity: rejectOpacity }}
-            className="absolute inset-0 bg-red-500/20 z-10 flex items-center justify-center rounded-3xl border-2 border-red-400 pointer-events-none"
+            className="absolute inset-0 z-20 pointer-events-none rounded-[28px] border-[3px] border-red-400"
           >
-            <div className="bg-red-500 text-white font-black text-3xl px-6 py-2 rounded-2xl rotate-[15deg] shadow-xl">
+            <div className="absolute top-8 right-6 bg-red-500 text-white font-black text-2xl px-5 py-2 rounded-2xl rotate-[20deg] shadow-xl tracking-wide">
               SKIP ✗
             </div>
           </motion.div>
         )}
 
-        {/* Top gradient bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-cyan-400 to-violet-500" />
+        {/* Top bar: score */}
+        <div className="absolute top-4 left-4 right-4 z-10 flex items-start justify-between">
+          <ScorePill score={lead.matchScore} />
+          <div className="text-[10px] text-white/30 font-medium tracking-widest uppercase pt-1.5">Apollo.io</div>
+        </div>
 
-        <div className="p-6 space-y-5">
-          {/* Header: logo + score */}
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              {lead.logoUrl
-                ? <img src={lead.logoUrl} alt={lead.companyName} className="w-14 h-14 rounded-2xl object-cover shadow-lg" />
-                : <LogoPlaceholder name={lead.companyName} />
-              }
-              <div>
-                <h2 className="text-white text-xl font-black leading-tight">{lead.companyName}</h2>
-                <span className="text-xs text-white/40 font-medium uppercase tracking-widest">Apollo.io</span>
-              </div>
-            </div>
-            <ScoreBadge score={lead.matchScore} />
-          </div>
-
-          {/* Divider */}
-          <div className="h-px bg-white/5" />
-
-          {/* Contact */}
-          <div className="bg-white/5 rounded-2xl px-4 py-3">
-            <p className="text-white font-semibold text-base">{lead.contactName}</p>
-            <p className="text-white/60 text-sm mt-0.5 flex items-center gap-1.5">
-              <Briefcase size={12} className="text-white/30" />
-              {lead.title}
-            </p>
-          </div>
-
-          {/* Info pills */}
-          <div className="flex flex-wrap gap-2">
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
-              <Briefcase size={11} className="text-violet-400" />
-              <span className="text-white/70 text-xs font-medium">{lead.industry}</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
-              <Users size={11} className="text-cyan-400" />
-              <span className="text-white/70 text-xs font-medium">{lead.employeeCount}</span>
-            </div>
-            <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 rounded-full px-3 py-1.5">
-              <MapPin size={11} className="text-emerald-400" />
-              <span className="text-white/70 text-xs font-medium">{lead.location}</span>
-            </div>
-          </div>
-
-          {/* Score bar */}
-          <div>
-            <div className="flex justify-between items-center mb-1.5">
-              <span className="text-white/40 text-xs">Compatibilidad con tu ICP</span>
-              <span className="text-white/60 text-xs font-semibold">{lead.matchScore}%</span>
-            </div>
-            <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
-              <div
-                className={`h-full rounded-full transition-all duration-700 ${
-                  lead.matchScore >= 80 ? 'bg-gradient-to-r from-emerald-400 to-green-500' :
-                  lead.matchScore >= 60 ? 'bg-gradient-to-r from-yellow-400 to-amber-500' :
-                  'bg-gradient-to-r from-orange-400 to-red-500'
-                }`}
-                style={{ width: `${lead.matchScore}%` }}
-              />
-            </div>
+        {/* Avatar central */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div
+            className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl border-4 border-white/10"
+            style={{ background: `linear-gradient(135deg, ${accent}44, ${accent}22)`, borderColor: `${accent}33` }}
+          >
+            <span className="text-4xl font-black" style={{ color: accent }}>{initials}</span>
           </div>
         </div>
 
-        {/* Swipe hint */}
-        {isTop && (
-          <p className="text-center text-white/20 text-[10px] pb-4 tracking-widest uppercase">
-            ← deslizá para decidir →
+        {/* Bottom gradient overlay */}
+        <div
+          className="absolute inset-x-0 bottom-0 z-10 px-5 pb-5 pt-16"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)' }}
+        >
+          {/* Name + title */}
+          <h2 className="text-white text-2xl font-black leading-tight">{lead.contactName}</h2>
+          <p className="text-white/60 text-sm mt-0.5 flex items-center gap-1.5">
+            <Briefcase size={11} className="text-white/30 flex-shrink-0" />
+            <span className="truncate">{lead.title}</span>
           </p>
-        )}
+
+          {/* Divider */}
+          <div className="h-px bg-white/10 my-3" />
+
+          {/* Company + pills */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold"
+              style={{ background: `${accent}22`, color: accent, border: `1px solid ${accent}44` }}
+            >
+              {lead.companyName}
+            </div>
+            <div className="flex items-center gap-1 text-white/40 text-[11px]">
+              <Users size={10} />
+              <span>{lead.employeeCount}</span>
+            </div>
+            <div className="flex items-center gap-1 text-white/40 text-[11px]">
+              <MapPin size={10} />
+              <span>{lead.location}</span>
+            </div>
+          </div>
+
+          {/* ICP bar */}
+          <div className="mt-3">
+            <div className="h-1 bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${lead.matchScore}%`,
+                  background: `linear-gradient(to right, ${accent}, ${accent}99)`,
+                }}
+              />
+            </div>
+            <p className="text-[10px] text-white/25 mt-1 text-right">Compatibilidad con tu ICP</p>
+          </div>
+        </div>
       </div>
 
-      {/* Action buttons — solo en la tarjeta activa */}
+      {/* Action buttons */}
       {isTop && (
-        <div className="flex items-center justify-center gap-6 mt-5">
+        <div className="flex items-center justify-center gap-5 mt-5">
+          {/* Reject */}
           <button
             onClick={triggerReject}
-            className="w-16 h-16 rounded-full bg-[#1a1a2e] border-2 border-red-500/50 flex items-center justify-center shadow-xl hover:bg-red-500/20 hover:border-red-400 hover:scale-110 transition-all duration-200 active:scale-95"
+            className="w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
+            style={{ background: '#1a1a2e', border: '2px solid rgba(248,113,113,0.5)' }}
           >
-            <span className="text-red-400 text-2xl font-black">✗</span>
+            <X size={22} className="text-red-400" strokeWidth={2.5} />
           </button>
+
+          {/* Star / super like */}
+          <button
+            onClick={triggerStar}
+            className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95"
+            style={{ background: '#1a1a2e', border: '2px solid rgba(96,165,250,0.4)' }}
+          >
+            <Star size={17} className="text-blue-400" strokeWidth={2} />
+          </button>
+
+          {/* Accept / Heart */}
           <button
             onClick={triggerAccept}
-            className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-emerald-500/30 hover:shadow-emerald-500/50 hover:scale-110 transition-all duration-200 active:scale-95"
+            className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95"
+            style={{ background: 'linear-gradient(135deg, #34d399, #06b6d4)', boxShadow: '0 8px 24px rgba(52,211,153,0.35)' }}
           >
-            <span className="text-white text-3xl font-black">✓</span>
-          </button>
-          <button
-            onClick={triggerReject}
-            className="w-16 h-16 rounded-full bg-[#1a1a2e] border-2 border-white/10 flex items-center justify-center shadow-xl hover:bg-white/5 hover:border-white/20 hover:scale-110 transition-all duration-200 active:scale-95"
-          >
-            <span className="text-white/40 text-lg">→</span>
+            <Heart size={22} className="text-white" fill="white" strokeWidth={0} />
           </button>
         </div>
       )}
