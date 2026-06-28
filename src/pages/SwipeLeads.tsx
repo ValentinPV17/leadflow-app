@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { Zap, LogOut, X } from 'lucide-react'
 import LeadDeck from '../components/LeadDeck'
@@ -5,6 +6,8 @@ import type { Lead } from '../components/LeadCard'
 import type { ApolloLead } from '../lib/apollo'
 import type { CampaignPayload } from '../App'
 import { calculateMatchScore, formatEmployeeCount } from '../lib/matchScore'
+
+type SwipeFilter = 'all' | 'account' | 'new' | 'hubspot'
 
 function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']): Lead {
   const domain = lead.organization?.primary_domain
@@ -141,11 +144,30 @@ interface Props {
 }
 
 export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payload }: Props) {
-  const leads: Lead[] = apolloLeads && payload && apolloLeads.length > 0
-    ? apolloLeads
-        .map(l => apolloToLead(l, payload.icp.payload))
-        .sort((a, b) => b.matchScore - a.matchScore)
-    : DEMO_LEADS
+  const [filter, setFilter] = useState<SwipeFilter>('all')
+
+  const allLeads: (Lead & { isFromAccount?: boolean; inHubSpot?: boolean })[] =
+    apolloLeads && payload && apolloLeads.length > 0
+      ? apolloLeads
+          .map(l => ({
+            ...apolloToLead(l, payload.icp.payload),
+            isFromAccount: l.isFromAccount,
+            inHubSpot: (l as any).inHubSpot,
+          }))
+          .sort((a, b) => b.matchScore - a.matchScore)
+      : DEMO_LEADS
+
+  const leads = allLeads.filter(l => {
+    if (filter === 'account') return l.isFromAccount
+    if (filter === 'new') return !l.isFromAccount && !l.inHubSpot
+    if (filter === 'hubspot') return l.inHubSpot
+    return true
+  })
+
+  const accountCount = allLeads.filter(l => l.isFromAccount).length
+  const newCount = allLeads.filter(l => !l.isFromAccount && !l.inHubSpot).length
+  const hubspotCount = allLeads.filter(l => l.inHubSpot).length
+
   return (
     <div className="min-h-screen bg-[#0d0d1a]">
       {/* Header */}
@@ -178,11 +200,39 @@ export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payloa
       </header>
 
       <main className="w-full max-w-xl mx-auto px-4 pt-8 pb-16">
-        <div className="text-center mb-6">
+        <div className="text-center mb-4">
           <h1 className="text-white text-2xl font-black mb-1">
             Match<span className="text-emerald-400">:</span>
           </h1>
           <p className="text-white/30 text-sm">← Descartar &nbsp;·&nbsp; Aceptar →</p>
+        </div>
+
+        {/* Filter tabs */}
+        <div className="flex items-center justify-center gap-1.5 mb-6 flex-wrap">
+          {([
+            { key: 'all' as SwipeFilter, label: `Todos (${allLeads.length})` },
+            { key: 'account' as SwipeFilter, label: `Tu cuenta (${accountCount})`, color: 'cyan' },
+            { key: 'new' as SwipeFilter, label: `Nuevos (${newCount})`, color: 'violet' },
+            { key: 'hubspot' as SwipeFilter, label: `HubSpot (${hubspotCount})`, color: 'orange' },
+          ]).map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                filter === f.key
+                  ? f.color === 'cyan'
+                    ? 'bg-cyan-500/20 border border-cyan-500/40 text-cyan-300'
+                    : f.color === 'violet'
+                    ? 'bg-violet-500/20 border border-violet-500/40 text-violet-300'
+                    : f.color === 'orange'
+                    ? 'bg-orange-500/20 border border-orange-500/40 text-orange-300'
+                    : 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                  : 'text-white/40 hover:text-white/70 border border-transparent hover:border-white/10'
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
         </div>
 
         <LeadDeck leads={leads} user={user} />

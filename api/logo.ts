@@ -1,24 +1,17 @@
 export default async function handler(req: any, res: any) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-
   const domain = (req.query?.domain as string) ?? ''
   if (!domain) return res.status(400).end()
 
-  // Try Clearbit first
+  // Check if Clearbit has a logo for this domain (HEAD request, no binary data)
   try {
-    const r = await fetch(`https://logo.clearbit.com/${domain}?size=128`, {
-      headers: { 'User-Agent': 'LeadFlow/1.0' },
-    })
-    if (r.ok) {
-      const buf = await r.arrayBuffer()
-      const ct = r.headers.get('content-type') || 'image/png'
-      res.setHeader('Content-Type', ct)
+    const check = await fetch(`https://logo.clearbit.com/${domain}`, { method: 'HEAD' })
+    if (check.ok) {
       res.setHeader('Cache-Control', 'public, max-age=86400')
-      return res.status(200).send(new Uint8Array(buf))
+      return res.redirect(302, `https://logo.clearbit.com/${domain}?size=128`)
     }
   } catch {}
 
-  // Fallback: redirect to a reliable favicon service (no Buffer needed)
-  const domain = (req.query?.domain as string) ?? ''
+  // Fallback: Google Favicon (always resolves, never DNS errors in browser)
+  res.setHeader('Cache-Control', 'public, max-age=3600')
   return res.redirect(302, `https://www.google.com/s2/favicons?domain=${domain}&sz=128`)
 }
