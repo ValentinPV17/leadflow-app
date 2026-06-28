@@ -5,7 +5,7 @@ import type { CampaignPayload } from '../App'
 import {
   Zap, LogOut, ArrowLeft, Download, ExternalLink,
   Mail, Building2, Users, Loader2, ChevronLeft, ChevronRight,
-  CheckCircle2, XCircle, Search, History
+  CheckCircle2, XCircle, Search, History, ChevronUp, ChevronDown
 } from 'lucide-react'
 
 interface Props {
@@ -67,10 +67,20 @@ function getInitials(firstName: string, lastName?: string | null) {
 }
 
 type Filter = 'all' | 'account' | 'new' | 'hubspot'
+type SortCol = 'name' | 'company' | 'email' | 'employees'
+type SortDir = 'asc' | 'desc'
 
 export default function Results({ user, payload, result, isLoading, onLoadPage, onNewCampaign, onHistory, onLogout, onSwipe }: Props) {
   const [currentPage, setCurrentPage] = useState(result.page)
   const [filter, setFilter] = useState<Filter>('all')
+  const [sortCol, setSortCol] = useState<SortCol | null>(null)
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const [search, setSearch] = useState('')
+
+  const handleSort = (col: SortCol) => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
   const totalPages = Math.ceil(result.total / result.per_page)
   const { icp } = payload
 
@@ -86,12 +96,43 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
   // Verdaderamente nuevo = no está en Apollo NI en HubSpot
   const trueNewCount = result.leads.filter(l => !l.isFromAccount && !(l as any).inHubSpot).length
 
-  const filteredLeads = result.leads.filter(l => {
-    if (filter === 'account') return l.isFromAccount
-    if (filter === 'new') return !l.isFromAccount && !(l as any).inHubSpot
-    if (filter === 'hubspot') return (l as any).inHubSpot
-    return true
-  })
+  const filteredLeads = result.leads
+    .filter(l => {
+      if (filter === 'account') return l.isFromAccount
+      if (filter === 'new') return !l.isFromAccount && !(l as any).inHubSpot
+      if (filter === 'hubspot') return (l as any).inHubSpot
+      return true
+    })
+    .filter(l => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      const name = (l.name || `${l.first_name} ${l.last_name || ''}`).toLowerCase()
+      return (
+        name.includes(q) ||
+        (l.title ?? '').toLowerCase().includes(q) ||
+        (l.organization?.name ?? '').toLowerCase().includes(q) ||
+        (l.email ?? '').toLowerCase().includes(q)
+      )
+    })
+    .sort((a, b) => {
+      if (!sortCol) return 0
+      let va = '', vb = ''
+      if (sortCol === 'name') {
+        va = (a.name || `${a.first_name} ${a.last_name || ''}`).toLowerCase()
+        vb = (b.name || `${b.first_name} ${b.last_name || ''}`).toLowerCase()
+      } else if (sortCol === 'company') {
+        va = (a.organization?.name ?? '').toLowerCase()
+        vb = (b.organization?.name ?? '').toLowerCase()
+      } else if (sortCol === 'email') {
+        va = a.email ? '1' : '0'
+        vb = b.email ? '1' : '0'
+      } else if (sortCol === 'employees') {
+        return sortDir === 'asc'
+          ? (a.organization?.estimated_num_employees ?? 0) - (b.organization?.estimated_num_employees ?? 0)
+          : (b.organization?.estimated_num_employees ?? 0) - (a.organization?.estimated_num_employees ?? 0)
+      }
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
 
   return (
     <div className="min-h-screen">
@@ -214,9 +255,26 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
 
         {/* Table */}
         <div className="animate-fade-up stagger-2 bg-slate-800/30 border border-slate-700/40 rounded-xl overflow-hidden">
-          {/* Filter tabs */}
+          {/* Search + Filter bar */}
           {!isLoading && result.leads.length > 0 && (
-            <div className="flex items-center gap-1.5 px-4 py-3 border-b border-slate-700/40 bg-slate-900/40">
+            <div className="px-4 py-3 border-b border-slate-700/40 bg-slate-900/40 space-y-2.5">
+              {/* Search input */}
+              <div className="relative">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                <input
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  placeholder="Buscar por nombre, cargo, empresa o email..."
+                  className="w-full pl-8 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-400/40 transition-colors"
+                />
+                {search && (
+                  <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                    <XCircle size={13} />
+                  </button>
+                )}
+              </div>
+              {/* Filter tabs */}
+              <div className="flex items-center gap-1.5">
               {([
                 { key: 'all', label: `Todos (${result.leads.length})` },
                 { key: 'account', label: `Tu cuenta (${savedCount})`, color: 'cyan' },
@@ -238,6 +296,7 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
                   {f.label}
                 </button>
               ))}
+              </div>
             </div>
           )}
 
@@ -256,10 +315,27 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-700/50 bg-slate-900/60">
-                    <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs w-[30%]">Contacto</th>
-                    <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs w-[26%]">Empresa</th>
-                    <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs w-[30%]">Email</th>
-                    <th className="text-center px-3 py-3 text-slate-400 font-medium text-xs w-[14%]">LinkedIn</th>
+                    {([
+                      { col: 'name' as SortCol, label: 'Contacto', align: 'left', w: 'w-[30%]' },
+                      { col: 'company' as SortCol, label: 'Empresa', align: 'left', w: 'w-[24%]' },
+                      { col: 'employees' as SortCol, label: 'Empleados', align: 'left', w: 'w-[12%]' },
+                      { col: 'email' as SortCol, label: 'Email', align: 'left', w: 'w-[26%]' },
+                    ]).map(({ col, label, align, w }) => (
+                      <th key={col} className={`text-${align} px-4 py-3 ${w}`}>
+                        <button
+                          onClick={() => handleSort(col)}
+                          className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-white transition-colors group"
+                        >
+                          {label}
+                          <span className="text-slate-600 group-hover:text-slate-400">
+                            {sortCol === col
+                              ? sortDir === 'asc' ? <ChevronUp size={11} className="text-emerald-400" /> : <ChevronDown size={11} className="text-emerald-400" />
+                              : <ChevronUp size={11} className="opacity-30" />}
+                          </span>
+                        </button>
+                      </th>
+                    ))}
+                    <th className="text-center px-3 py-3 text-slate-400 font-medium text-xs w-[8%]">LinkedIn</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -292,21 +368,21 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
                             </div>
                           </div>
                         </td>
-                        {/* Empresa: nombre + empleados */}
+                        {/* Empresa */}
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <Building2 size={11} className="flex-shrink-0 text-slate-600" />
                             <span className="truncate text-slate-300 text-xs">{lead.organization?.name ?? '—'}</span>
                           </div>
-                          <div className="flex items-center gap-1 mt-0.5 ml-4">
-                            <Users size={10} className="text-slate-600 flex-shrink-0" />
-                            <span className="text-[11px] text-slate-500">
-                              {lead.organization?.estimated_num_employees
-                                ? lead.organization.estimated_num_employees.toLocaleString()
-                                : '—'}
-                              {lead.country ? ` · ${lead.country}` : ''}
-                            </span>
-                          </div>
+                          {lead.country && (
+                            <span className="text-[11px] text-slate-500 ml-4">{lead.country}</span>
+                          )}
+                        </td>
+                        {/* Empleados */}
+                        <td className="px-4 py-3 text-slate-400 text-xs whitespace-nowrap">
+                          {lead.organization?.estimated_num_employees
+                            ? lead.organization.estimated_num_employees.toLocaleString()
+                            : '—'}
                         </td>
                         {/* Email */}
                         <td className="px-4 py-3">
