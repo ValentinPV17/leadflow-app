@@ -1,5 +1,5 @@
 import type { User } from '@supabase/supabase-js'
-import { Zap, LogOut, ArrowLeft } from 'lucide-react'
+import { Zap, LogOut, X } from 'lucide-react'
 import LeadDeck from '../components/LeadDeck'
 import type { Lead } from '../components/LeadCard'
 import type { ApolloLead } from '../lib/apollo'
@@ -151,27 +151,27 @@ export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payloa
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-white/5 bg-[#0d0d1a]/80 backdrop-blur-xl">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={onBack}
-              className="p-1.5 text-white/40 hover:text-white/70 transition-colors rounded-lg hover:bg-white/5"
-            >
-              <ArrowLeft size={16} />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
-                <Zap size={14} className="text-slate-900" />
-              </div>
-              <span className="text-sm font-bold text-white tracking-tight">Match<span className="text-emerald-400">:</span></span>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-gradient-to-br from-emerald-400 to-cyan-400 flex items-center justify-center">
+              <Zap size={14} className="text-slate-900" />
             </div>
+            <span className="text-sm font-bold text-white tracking-tight">Match<span className="text-emerald-400">:</span></span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-white/30 hidden sm:block">{user.email}</span>
             <button
               onClick={onLogout}
-              className="p-1.5 text-white/30 hover:text-white/60 transition-colors rounded-lg hover:bg-white/5"
+              className="p-1.5 text-white/20 hover:text-white/50 transition-colors rounded-lg hover:bg-white/5"
+              title="Cerrar sesión"
             >
-              <LogOut size={15} />
+              <LogOut size={14} />
+            </button>
+            <button
+              onClick={onBack}
+              className="p-1.5 bg-white/8 border border-white/10 text-white/60 hover:text-white hover:bg-white/15 transition-all rounded-lg"
+              title="Salir"
+            >
+              <X size={16} />
             </button>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payloa
           <h1 className="text-white text-2xl font-black mb-1">
             Match<span className="text-emerald-400">:</span>
           </h1>
-          <p className="text-white/30 text-sm">← Descartar &nbsp;·&nbsp; ★ Super match &nbsp;·&nbsp; Aceptar →</p>
+          <p className="text-white/30 text-sm">← Descartar &nbsp;·&nbsp; Aceptar →</p>
         </div>
 
         <LeadDeck leads={leads} user={user} />

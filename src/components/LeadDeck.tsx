@@ -39,11 +39,6 @@ export default function LeadDeck({ leads, user }: Props) {
     setQueue(q => q.filter(l => l.id !== id))
   }
 
-  const handleStar = (id: string) => {
-    saveReview(id, 'accepted')
-    setAcceptedCount(c => c + 1)
-    setQueue(q => q.filter(l => l.id !== id))
-  }
 
   if (queue.length === 0) {
     return (
@@ -106,7 +101,6 @@ export default function LeadDeck({ leads, user }: Props) {
               stackIndex={i}
               onAccept={handleAccept}
               onReject={handleReject}
-              onStar={handleStar}
             />
           ))}
         </AnimatePresence>

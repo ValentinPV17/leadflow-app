@@ -4,6 +4,7 @@ import type { CampaignPayload } from '../App'
 import TagInput from '../components/TagInput'
 import { parseICPFromText } from '../lib/openai'
 import { extractTextFromPDF } from '../lib/pdfExtract'
+import { supabase } from '../lib/supabase'
 import {
   Send, Zap, LogOut, Building2, Users, Globe, Target,
   ChevronDown, Loader2, Sparkles, X, ChevronRight, RotateCcw,
@@ -98,16 +99,31 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
   const [aiParsed, setAiParsed] = useState(false)
   const [rangeDropdownOpen, setRangeDropdownOpen] = useState(false)
   const rangeDropdownRef = useRef<HTMLDivElement>(null)
+  const [configOpen, setConfigOpen] = useState(false)
+  const configRef = useRef<HTMLDivElement>(null)
+  const [matchCount, setMatchCount] = useState<number | null>(null)
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (rangeDropdownRef.current && !rangeDropdownRef.current.contains(e.target as Node)) {
         setRangeDropdownOpen(false)
       }
+      if (configRef.current && !configRef.current.contains(e.target as Node)) {
+        setConfigOpen(false)
+      }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  useEffect(() => {
+    supabase
+      .from('lead_reviews')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('action', 'accepted')
+      .then(({ count }) => setMatchCount(count ?? 0))
+  }, [user.id])
 
   const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL || ''
   const canSubmit = formData.titles.length > 0 && formData.industries.length > 0 && formData.countries.length > 0
@@ -231,6 +247,14 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             <span className="text-sm font-bold text-white tracking-tight">LeadFlow</span>
           </div>
           <nav className="flex items-center gap-1.5">
+            {/* Match counter badge */}
+            {matchCount !== null && matchCount > 0 && (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <Zap size={11} className="text-emerald-400 fill-emerald-400" />
+                <span className="text-[11px] font-bold text-emerald-400">{matchCount} matches</span>
+              </div>
+            )}
+
             <button
               onClick={onSwipe}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-500/25 text-emerald-300 rounded-lg hover:from-emerald-500/25 hover:to-cyan-500/25 transition-all"
@@ -238,13 +262,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
               <span>✦</span>
               <span className="hidden sm:inline">Match:</span>
             </button>
-            <button
-              onClick={onIntegrations}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 rounded-lg hover:bg-slate-800/60 hover:text-slate-200 transition-all"
-            >
-              <Settings size={13} />
-              <span className="hidden sm:inline">Integraciones</span>
-            </button>
+
             <button
               onClick={onHistory}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 rounded-lg hover:bg-slate-800/60 hover:text-slate-200 transition-all"
@@ -252,6 +270,33 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
               <History size={13} />
               <span className="hidden sm:inline">Historial</span>
             </button>
+
+            {/* Configuraciones dropdown */}
+            <div className="relative" ref={configRef}>
+              <button
+                onClick={() => setConfigOpen(o => !o)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-slate-400 rounded-lg hover:bg-slate-800/60 hover:text-slate-200 transition-all"
+              >
+                <Settings size={13} />
+                <span className="hidden sm:inline">Configuraciones</span>
+                <ChevronDown size={11} className={`transition-transform duration-200 ${configOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {configOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 bg-slate-800 border border-slate-700/60 rounded-xl shadow-2xl shadow-black/40 overflow-hidden z-50">
+                  <div className="px-3 py-2 border-b border-slate-700/40">
+                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Configuraciones</p>
+                  </div>
+                  <button
+                    onClick={() => { setConfigOpen(false); onIntegrations() }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors"
+                  >
+                    <Settings size={13} className="text-slate-500" />
+                    Integraciones
+                  </button>
+                </div>
+              )}
+            </div>
+
             <div className="w-px h-4 bg-slate-700/60 mx-1" />
             <span className="text-xs text-slate-500 hidden sm:block max-w-36 truncate">{user.email}</span>
             <button

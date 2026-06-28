@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion'
-import { MapPin, Users, Briefcase, Zap, X, Heart, Star } from 'lucide-react'
+import { MapPin, Users, Briefcase, Zap, X, Heart } from 'lucide-react'
 
 export type Lead = {
   id: string
@@ -20,7 +20,6 @@ interface Props {
   stackIndex: number
   onAccept: (id: string) => void
   onReject: (id: string) => void
-  onStar?: (id: string) => void
 }
 
 const CARD_GRADIENTS = [
@@ -59,7 +58,7 @@ function ScorePill({ score }: { score: number }) {
   )
 }
 
-export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, onStar }: Props) {
+export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }: Props) {
   const [logoFailed, setLogoFailed] = useState(false)
   const x = useMotionValue(0)
   const controls = useAnimation()
@@ -93,12 +92,6 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, 
   const triggerReject = async () => {
     await controls.start({ x: -700, opacity: 0, transition: { duration: 0.3 } })
     onReject(lead.id)
-  }
-
-  const triggerStar = async () => {
-    await controls.start({ y: -700, opacity: 0, transition: { duration: 0.3 } })
-    onStar?.(lead.id)
-    onAccept(lead.id)
   }
 
   const accent = getAccentColor(lead.companyName)
@@ -230,32 +223,20 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, 
 
       {/* Action buttons */}
       {isTop && (
-        <div className="flex items-center justify-center gap-5 mt-5">
-          {/* Reject */}
+        <div className="flex items-center justify-center gap-6 mt-5">
           <button
             onClick={triggerReject}
-            className="w-14 h-14 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
+            className="w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-all duration-200 hover:scale-110 active:scale-95"
             style={{ background: '#1a1a2e', border: '2px solid rgba(248,113,113,0.5)' }}
           >
-            <X size={22} className="text-red-400" strokeWidth={2.5} />
+            <X size={24} className="text-red-400" strokeWidth={2.5} />
           </button>
-
-          {/* Star / super like */}
-          <button
-            onClick={triggerStar}
-            className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 hover:scale-110 active:scale-95"
-            style={{ background: '#1a1a2e', border: '2px solid rgba(96,165,250,0.4)' }}
-          >
-            <Star size={17} className="text-blue-400" strokeWidth={2} />
-          </button>
-
-          {/* Accept / Heart */}
           <button
             onClick={triggerAccept}
-            className="w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95"
+            className="w-16 h-16 rounded-full flex items-center justify-center shadow-2xl transition-all duration-200 hover:scale-110 active:scale-95"
             style={{ background: 'linear-gradient(135deg, #34d399, #06b6d4)', boxShadow: '0 8px 24px rgba(52,211,153,0.35)' }}
           >
-            <Heart size={22} className="text-white" fill="white" strokeWidth={0} />
+            <Heart size={24} className="text-white" fill="white" strokeWidth={0} />
           </button>
         </div>
       )}
