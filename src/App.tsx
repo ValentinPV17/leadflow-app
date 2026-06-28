@@ -44,9 +44,11 @@ export default function App() {
       setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      setScreen(session?.user ? 'dashboard' : 'login')
+      // Only change screen on actual sign-in/sign-out, not token refreshes
+      if (event === 'SIGNED_OUT') setScreen('login')
+      if (event === 'SIGNED_IN') setScreen(prev => prev === 'login' ? 'dashboard' : prev)
     })
 
     return () => subscription.unsubscribe()
