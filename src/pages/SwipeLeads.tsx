@@ -7,6 +7,7 @@ import type { CampaignPayload } from '../App'
 import { calculateMatchScore, formatEmployeeCount } from '../lib/matchScore'
 
 function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']): Lead {
+  const domain = lead.organization?.primary_domain
   return {
     id: lead.id,
     companyName: lead.organization?.name ?? 'Empresa desconocida',
@@ -15,6 +16,7 @@ function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']):
     industry: lead.organization?.industry ?? icp.industries[0] ?? 'N/A',
     employeeCount: formatEmployeeCount(lead.organization?.estimated_num_employees ?? null),
     location: [lead.city, lead.country].filter(Boolean).join(', ') || 'N/A',
+    logoUrl: domain ? `https://logo.clearbit.com/${domain}` : undefined,
     matchScore: calculateMatchScore(lead, {
       titles: icp.titles,
       industries: icp.industries,

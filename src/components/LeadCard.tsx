@@ -157,14 +157,33 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject, 
           <div className="text-[10px] text-white/30 font-medium tracking-widest uppercase pt-1.5">Apollo.io</div>
         </div>
 
-        {/* Avatar central */}
+        {/* Logo / Avatar central */}
         <div className="absolute inset-0 flex items-center justify-center">
-          <div
-            className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl border-4 border-white/10"
-            style={{ background: `linear-gradient(135deg, ${accent}44, ${accent}22)`, borderColor: `${accent}33` }}
-          >
-            <span className="text-4xl font-black" style={{ color: accent }}>{initials}</span>
-          </div>
+          {lead.logoUrl ? (
+            <div
+              className="w-28 h-28 rounded-2xl flex items-center justify-center shadow-2xl border border-white/10 bg-white/5 overflow-hidden"
+            >
+              <img
+                src={lead.logoUrl}
+                alt={lead.companyName}
+                className="w-20 h-20 object-contain"
+                onError={e => {
+                  const target = e.currentTarget
+                  target.style.display = 'none'
+                  const parent = target.parentElement!
+                  parent.style.background = `linear-gradient(135deg, ${accent}44, ${accent}22)`
+                  parent.innerHTML = `<span style="color:${accent};font-size:2.5rem;font-weight:900;">${initials}</span>`
+                }}
+              />
+            </div>
+          ) : (
+            <div
+              className="w-28 h-28 rounded-full flex items-center justify-center shadow-2xl border-4"
+              style={{ background: `linear-gradient(135deg, ${accent}44, ${accent}22)`, borderColor: `${accent}33` }}
+            >
+              <span className="text-4xl font-black" style={{ color: accent }}>{initials}</span>
+            </div>
+          )}
         </div>
 
         {/* Bottom gradient overlay */}
