@@ -218,10 +218,10 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-700/50 bg-slate-900/60">
-                    <th className="text-left px-4 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[28%]">Contacto</th>
-                    <th className="text-left px-4 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[28%]">Empresa</th>
-                    <th className="text-left px-4 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[32%]">Email</th>
-                    <th className="text-center px-3 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[12%]">LinkedIn</th>
+                    <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs w-[30%]">Contacto</th>
+                    <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs w-[26%]">Empresa</th>
+                    <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs w-[30%]">Email</th>
+                    <th className="text-center px-3 py-3 text-slate-400 font-medium text-xs w-[14%]">LinkedIn</th>
                   </tr>
                 </thead>
                 <tbody>
