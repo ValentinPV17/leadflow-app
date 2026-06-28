@@ -209,17 +209,14 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               <p className="text-slate-600 text-xs mt-1">Probá ampliando los criterios de búsqueda</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div>
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-slate-700/50 bg-slate-900/60">
-                    <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Nombre</th>
-                    <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Cargo</th>
-                    <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Empresa</th>
-                    <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Empleados</th>
-                    <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Email</th>
-                    <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">País</th>
-                    <th className="text-center px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">LinkedIn</th>
+                    <th className="text-left px-4 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[28%]">Contacto</th>
+                    <th className="text-left px-4 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[28%]">Empresa</th>
+                    <th className="text-left px-4 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[32%]">Email</th>
+                    <th className="text-center px-3 py-3 text-slate-500 font-semibold tracking-wide uppercase text-[10px] w-[12%]">LinkedIn</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,50 +227,47 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
                     return (
                       <tr
                         key={lead.id ?? i}
-                        className="border-b border-slate-700/20 hover:bg-slate-700/20 transition-colors"
+                        className="border-b border-slate-700/20 hover:bg-slate-700/15 transition-colors"
                       >
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        {/* Contacto: avatar + nombre + cargo */}
+                        <td className="px-4 py-3">
                           <div className="flex items-center gap-2.5">
                             <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${avatarColor}`}>
                               {initials}
                             </div>
-                            <div>
-                              <span className="text-white font-medium text-xs">{displayName}</span>
-                              {(lead as any).inHubSpot && (
-                                <span className="ml-1.5 text-[9px] font-semibold bg-orange-500/15 border border-orange-500/25 text-orange-400 rounded px-1.5 py-0.5">
-                                  En HubSpot
-                                </span>
-                              )}
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-white font-medium text-xs truncate">{displayName}</span>
+                                {(lead as any).inHubSpot && (
+                                  <span className="flex-shrink-0 text-[9px] font-semibold bg-orange-500/15 border border-orange-500/25 text-orange-400 rounded px-1.5 py-0.5">CRM</span>
+                                )}
+                              </div>
+                              <span className="text-slate-500 text-[11px] truncate block">{lead.title ?? '—'}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3.5 text-slate-300 max-w-44">
-                          <span className="truncate block text-xs">{lead.title ?? '—'}</span>
-                        </td>
-                        <td className="px-4 py-3.5 max-w-40">
-                          <div className="flex items-center gap-1.5">
+                        {/* Empresa: nombre + empleados */}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5 min-w-0">
                             <Building2 size={11} className="flex-shrink-0 text-slate-600" />
-                            <span className="truncate text-slate-300 text-xs">
-                              {lead.organization?.name ?? '—'}
+                            <span className="truncate text-slate-300 text-xs">{lead.organization?.name ?? '—'}</span>
+                          </div>
+                          <div className="flex items-center gap-1 mt-0.5 ml-4">
+                            <Users size={10} className="text-slate-600 flex-shrink-0" />
+                            <span className="text-[11px] text-slate-500">
+                              {lead.organization?.estimated_num_employees
+                                ? lead.organization.estimated_num_employees.toLocaleString()
+                                : '—'}
+                              {lead.country ? ` · ${lead.country}` : ''}
                             </span>
                           </div>
-                          {lead.organization?.primary_domain && (
-                            <span className="text-[10px] text-slate-600 ml-4">{lead.organization.primary_domain}</span>
-                          )}
                         </td>
-                        <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">
-                          <div className="flex items-center gap-1">
-                            <Users size={11} className="text-slate-600" />
-                            {lead.organization?.estimated_num_employees
-                              ? lead.organization.estimated_num_employees.toLocaleString()
-                              : '—'}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3.5 max-w-48">
+                        {/* Email */}
+                        <td className="px-4 py-3">
                           {lead.email ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <CheckCircle2 size={11} className="text-emerald-400 flex-shrink-0" />
-                              <a href={`mailto:${lead.email}`} className="text-emerald-400 hover:underline truncate text-xs block">{lead.email}</a>
+                              <a href={`mailto:${lead.email}`} className="text-emerald-400 hover:underline truncate text-xs">{lead.email}</a>
                             </div>
                           ) : (
                             <span className="flex items-center gap-1 text-slate-600 text-xs">
@@ -281,19 +275,15 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3.5 text-slate-400 text-xs whitespace-nowrap">{lead.country ?? '—'}</td>
-                        <td className="px-4 py-3.5 text-center">
+                        {/* LinkedIn */}
+                        <td className="px-3 py-3 text-center">
                           {lead.linkedin_url ? (
-                            <a
-                              href={lead.linkedin_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors hover:underline"
-                            >
-                              <ExternalLink size={11} /> Ver
+                            <a href={lead.linkedin_url} target="_blank" rel="noreferrer"
+                              className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all">
+                              <ExternalLink size={11} />
                             </a>
                           ) : (
-                            <span className="text-slate-600 text-xs">—</span>
+                            <span className="text-slate-700 text-xs">—</span>
                           )}
                         </td>
                       </tr>

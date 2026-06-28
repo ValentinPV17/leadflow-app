@@ -55,7 +55,7 @@ export default function TagInput({ tags, onAdd, onRemove, placeholder, suggestio
       </div>
 
       {focused && filtered.length > 0 && (
-        <div className="absolute z-20 mt-1.5 w-full bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl shadow-black/40 max-h-36 overflow-y-auto">
+        <div className="absolute z-50 mt-1.5 w-full bg-slate-800 border border-slate-600/50 rounded-lg shadow-2xl shadow-black/40 max-h-36 overflow-y-auto">
           {filtered.slice(0, 6).map((s, i) => (
             <button
               key={i}

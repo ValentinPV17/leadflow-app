@@ -231,6 +231,8 @@ export default function App() {
           onHistory={() => setScreen('history')}
           onIntegrations={() => setScreen('integrations')}
           onSwipe={() => setScreen('swipe')}
+          hasResults={!!apolloResult}
+          onResumeResults={() => setScreen('results')}
         />
       )
     case 'results':

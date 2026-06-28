@@ -72,11 +72,13 @@ interface Props {
   onHistory: () => void
   onIntegrations: () => void
   onSwipe: () => void
+  hasResults?: boolean
+  onResumeResults?: () => void
 }
 
 type Mode = 'ai' | 'manual'
 
-export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, onIntegrations, onSwipe }: Props) {
+export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, onIntegrations, onSwipe, hasResults, onResumeResults }: Props) {
   const [mode, setMode] = useState<Mode>('ai')
   const [aiText, setAiText] = useState('')
   const [isParsing, setIsParsing] = useState(false)
@@ -265,6 +267,22 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
 
       <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
 
+        {/* Resume results banner */}
+        {hasResults && onResumeResults && (
+          <button
+            onClick={onResumeResults}
+            className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 transition-all group animate-fade-up"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-sm text-emerald-300 font-medium">Tenés resultados activos</span>
+            </div>
+            <span className="text-xs text-emerald-400/70 group-hover:text-emerald-400 transition-colors flex items-center gap-1">
+              Ver resultados →
+            </span>
+          </button>
+        )}
+
         {/* Title + Step indicator */}
         <div className="animate-fade-up">
           <h1 className="text-xl font-bold text-white mb-1">Nueva campaña de leads</h1>
@@ -446,7 +464,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Industries */}
-          <div className="animate-fade-up stagger-2 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+          <div className="animate-fade-up stagger-2 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 relative z-[50]">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
                 <Building2 size={12} className="text-slate-400" />
@@ -470,7 +488,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Titles */}
-          <div className="animate-fade-up stagger-3 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+          <div className="animate-fade-up stagger-3 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 relative z-[40]">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
                 <Users size={12} className="text-slate-400" />
@@ -494,7 +512,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Countries */}
-          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 relative z-[30]">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
                 <Globe size={12} className="text-slate-400" />
@@ -527,7 +545,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Employee ranges */}
-          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 relative z-[20]">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
                 <Target size={12} className="text-slate-400" />
@@ -536,7 +554,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
                 Rango de empleados
               </label>
             </div>
-            <div className="relative z-10" ref={rangeDropdownRef}>
+            <div className="relative z-50" ref={rangeDropdownRef}>
               <button
                 onClick={() => setRangeDropdownOpen(o => !o)}
                 className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-900/50 border border-slate-600/40 rounded-lg text-sm transition-all hover:border-slate-500 focus:border-emerald-400/50"
@@ -553,7 +571,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
               </button>
 
               {rangeDropdownOpen && (
-                <div className="absolute z-20 mt-1 w-full bg-slate-800 border border-slate-700/60 rounded-lg shadow-xl overflow-hidden">
+                <div className="absolute z-50 mt-1 w-full bg-slate-800 border border-slate-700/60 rounded-lg shadow-xl overflow-hidden">
                   <div className="max-h-64 overflow-y-auto py-1">
                     {EMPLOYEE_RANGES.map(r => {
                       const selected = formData.employeeRanges.includes(r.value)
@@ -590,7 +608,7 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
           </div>
 
           {/* Seniority */}
-          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5">
+          <div className="animate-fade-up stagger-4 bg-slate-800/40 border border-slate-700/30 rounded-xl p-5 relative z-[10]">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-6 h-6 rounded-md bg-slate-700/60 flex items-center justify-center">
                 <Users size={12} className="text-slate-400" />
