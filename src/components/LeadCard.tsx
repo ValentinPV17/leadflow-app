@@ -158,7 +158,7 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }
               <img
                 src={lead.logoUrl}
                 alt={lead.companyName}
-                className="w-full h-full object-contain p-3"
+                className="w-full h-full object-cover"
                 onError={() => setLogoFailed(true)}
               />
             </div>
