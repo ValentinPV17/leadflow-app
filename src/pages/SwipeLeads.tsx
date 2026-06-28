@@ -2,6 +2,28 @@ import type { User } from '@supabase/supabase-js'
 import { Zap, LogOut, ArrowLeft } from 'lucide-react'
 import LeadDeck from '../components/LeadDeck'
 import type { Lead } from '../components/LeadCard'
+import type { ApolloLead } from '../lib/apollo'
+import type { CampaignPayload } from '../App'
+import { calculateMatchScore, formatEmployeeCount } from '../lib/matchScore'
+
+function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']): Lead {
+  return {
+    id: lead.id,
+    companyName: lead.organization?.name ?? 'Empresa desconocida',
+    contactName: lead.name ?? `${lead.first_name} ${lead.last_name ?? ''}`.trim(),
+    title: lead.title ?? '',
+    industry: lead.organization?.industry ?? icp.industries[0] ?? 'N/A',
+    employeeCount: formatEmployeeCount(lead.organization?.estimated_num_employees ?? null),
+    location: [lead.city, lead.country].filter(Boolean).join(', ') || 'N/A',
+    matchScore: calculateMatchScore(lead, {
+      titles: icp.titles,
+      industries: icp.industries,
+      countries: icp.countries,
+      employee_ranges: icp.employee_ranges,
+      seniorities: icp.seniorities,
+    }),
+  }
+}
 
 const DEMO_LEADS: Lead[] = [
   {
@@ -110,9 +132,16 @@ interface Props {
   user: User
   onLogout: () => void
   onBack: () => void
+  apolloLeads?: ApolloLead[]
+  payload?: CampaignPayload
 }
 
-export default function SwipeLeads({ user, onLogout, onBack }: Props) {
+export default function SwipeLeads({ user, onLogout, onBack, apolloLeads, payload }: Props) {
+  const leads: Lead[] = apolloLeads && payload && apolloLeads.length > 0
+    ? apolloLeads
+        .map(l => apolloToLead(l, payload.icp.payload))
+        .sort((a, b) => b.matchScore - a.matchScore)
+    : DEMO_LEADS
   return (
     <div className="min-h-screen bg-[#0d0d1a]">
       {/* Header */}
@@ -144,13 +173,13 @@ export default function SwipeLeads({ user, onLogout, onBack }: Props) {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-8 pb-16">
+      <main className="w-full max-w-xl mx-auto px-4 pt-8 pb-16">
         <div className="text-center mb-6">
           <h1 className="text-white text-xl font-black mb-1">Tus matches de hoy</h1>
           <p className="text-white/30 text-sm">Deslizá para aceptar o descartar leads</p>
         </div>
 
-        <LeadDeck leads={DEMO_LEADS} user={user} />
+        <LeadDeck leads={leads} user={user} />
       </main>
     </div>
   )

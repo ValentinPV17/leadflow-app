@@ -12,6 +12,7 @@ export interface ApolloLead extends Record<string, unknown> {
     website_url: string | null
     estimated_num_employees: number | null
     primary_domain: string | null
+    industry?: string | null
   } | null
   city: string | null
   state: string | null

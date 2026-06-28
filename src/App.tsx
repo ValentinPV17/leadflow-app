@@ -244,6 +244,7 @@ export default function App() {
           onNewCampaign={() => setScreen('dashboard')}
           onHistory={() => setScreen('history')}
           onLogout={handleLogout}
+          onSwipe={() => setScreen('swipe')}
         />
       )
     case 'history':
@@ -268,7 +269,9 @@ export default function App() {
         <SwipeLeads
           user={user!}
           onLogout={handleLogout}
-          onBack={() => setScreen('dashboard')}
+          onBack={() => setScreen(apolloResult ? 'results' : 'dashboard')}
+          apolloLeads={apolloResult?.leads}
+          payload={lastPayload ?? undefined}
         />
       )
   }
