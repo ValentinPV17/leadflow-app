@@ -146,7 +146,6 @@ export default function App() {
             industries: payload.icp.payload.industries,
             titles: payload.icp.payload.titles,
             countries: payload.icp.payload.countries,
-            employee_ranges: payload.icp.payload.employee_ranges,
             seniorities: payload.icp.payload.seniorities,
             status: 'draft',
           })

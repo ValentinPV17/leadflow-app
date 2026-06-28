@@ -101,7 +101,8 @@ export async function searchApolloLeads(params: ApolloSearchParams): Promise<Apo
 
   const data = await response.json()
   console.log('[Apollo] Global search status:', response.status)
-  console.log('[Apollo] Global total_entries:', data.pagination?.total_entries)
+  console.log('[Apollo] Global pagination:', JSON.stringify(data.pagination ?? data.meta ?? {}))
+  const totalEntries = data.pagination?.total_entries ?? data.meta?.total_count ?? data.total_count ?? null
 
   if (!response.ok) {
     throw new Error(data?.message || data?.error || `Apollo error: ${response.status}`)
@@ -131,9 +132,9 @@ export async function searchApolloLeads(params: ApolloSearchParams): Promise<Apo
 
   return {
     leads: allLeads,
-    total: (data.pagination?.total_entries ?? globalPeople.length) + savedContacts.length,
-    page: data.pagination?.page ?? 1,
-    per_page: data.pagination?.per_page ?? 25,
+    total: totalEntries != null ? totalEntries + savedContacts.length : allLeads.length,
+    page: data.pagination?.page ?? data.meta?.page ?? 1,
+    per_page: data.pagination?.per_page ?? data.meta?.per_page ?? 25,
     savedCount: savedContacts.length,
     newCount: revealedNew.length,
   }
