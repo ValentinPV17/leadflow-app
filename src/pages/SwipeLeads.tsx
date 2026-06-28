@@ -18,7 +18,7 @@ function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']):
     industry: lead.organization?.industry ?? icp.industries[0] ?? 'N/A',
     employeeCount: formatEmployeeCount(lead.organization?.estimated_num_employees ?? null),
     location: [lead.city, lead.country].filter(Boolean).join(', ') || 'N/A',
-    logoUrl: domain ? `https://logo.clearbit.com/${domain}` : undefined,
+    logoUrl: domain ? `/api/logo?domain=${domain}` : undefined,
     matchScore: calculateMatchScore(lead, {
       titles: icp.titles,
       industries: icp.industries,
