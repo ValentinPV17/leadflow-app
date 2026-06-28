@@ -82,12 +82,13 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
   const emailCount = result.leads.filter(l => l.email).length
   const hubspotCount = result.leads.filter(l => (l as any).inHubSpot).length
   const emailPct = result.leads.length > 0 ? Math.round((emailCount / result.leads.length) * 100) : 0
-  const savedCount = result.savedCount ?? result.leads.filter(l => l.isFromAccount).length
-  const newCount = result.newCount ?? (result.leads.length - savedCount)
+  const savedCount = result.leads.filter(l => l.isFromAccount).length
+  // Verdaderamente nuevo = no está en Apollo NI en HubSpot
+  const trueNewCount = result.leads.filter(l => !l.isFromAccount && !(l as any).inHubSpot).length
 
   const filteredLeads = result.leads.filter(l => {
     if (filter === 'account') return l.isFromAccount
-    if (filter === 'new') return !l.isFromAccount
+    if (filter === 'new') return !l.isFromAccount && !(l as any).inHubSpot
     if (filter === 'hubspot') return (l as any).inHubSpot
     return true
   })
@@ -190,8 +191,8 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               </div>
               <span className="text-xs text-slate-500 font-medium">Nuevos contactos</span>
             </div>
-            <p className="text-2xl font-bold text-violet-400">{newCount}</p>
-            <p className="text-[10px] text-slate-600 mt-2">Buscados en Apollo</p>
+            <p className="text-2xl font-bold text-violet-400">{trueNewCount}</p>
+            <p className="text-[10px] text-slate-600 mt-2">No están en Apollo ni HubSpot</p>
           </div>
 
           <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
@@ -219,7 +220,7 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               {([
                 { key: 'all', label: `Todos (${result.leads.length})` },
                 { key: 'account', label: `Tu cuenta (${savedCount})`, color: 'cyan' },
-                { key: 'new', label: `Nuevos (${newCount})`, color: 'violet' },
+                { key: 'new', label: `Nuevos (${trueNewCount})`, color: 'violet' },
                 { key: 'hubspot', label: `HubSpot (${hubspotCount})`, color: 'orange' },
               ] as { key: Filter, label: string, color?: string }[]).map(f => (
                 <button
