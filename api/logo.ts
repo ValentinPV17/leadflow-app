@@ -14,16 +14,11 @@ export default async function handler(req: any, res: any) {
       const ct = r.headers.get('content-type') || 'image/png'
       res.setHeader('Content-Type', ct)
       res.setHeader('Cache-Control', 'public, max-age=86400')
-      return res.status(200).send(Buffer.from(buf))
+      return res.status(200).send(new Uint8Array(buf))
     }
   } catch {}
 
-  // Fallback: 1x1 transparent PNG (triggers React onError cleanly)
-  const transparent = Buffer.from(
-    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-    'base64'
-  )
-  res.setHeader('Content-Type', 'image/png')
-  res.setHeader('Cache-Control', 'public, max-age=3600')
-  return res.status(200).send(transparent)
+  // Fallback: redirect to a reliable favicon service (no Buffer needed)
+  const domain = (req.query?.domain as string) ?? ''
+  return res.redirect(302, `https://www.google.com/s2/favicons?domain=${domain}&sz=128`)
 }
