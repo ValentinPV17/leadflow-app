@@ -59,7 +59,18 @@ function ScorePill({ score }: { score: number }) {
 }
 
 export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }: Props) {
+  const [logoSrc, setLogoSrc] = useState<string | null>(lead.logoUrl ?? null)
   const [logoFailed, setLogoFailed] = useState(false)
+
+  const handleLogoError = () => {
+    // Clearbit failed → try Google Favicon
+    if (logoSrc && logoSrc.includes('clearbit')) {
+      const domain = logoSrc.replace('https://logo.clearbit.com/', '').split('?')[0]
+      setLogoSrc(`https://www.google.com/s2/favicons?domain=${domain}&sz=128`)
+    } else {
+      setLogoFailed(true)
+    }
+  }
   const x = useMotionValue(0)
   const controls = useAnimation()
   const constraintsRef = useRef(null)
@@ -153,13 +164,13 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }
 
         {/* Logo / Avatar central */}
         <div className="absolute inset-0 flex items-center justify-center">
-          {lead.logoUrl && !logoFailed ? (
+          {logoSrc && !logoFailed ? (
             <div className="w-28 h-28 rounded-2xl flex items-center justify-center shadow-2xl bg-white overflow-hidden">
               <img
-                src={lead.logoUrl}
+                src={logoSrc}
                 alt={lead.companyName}
                 className="w-full h-full object-contain p-3"
-                onError={() => setLogoFailed(true)}
+                onError={handleLogoError}
               />
             </div>
           ) : (
