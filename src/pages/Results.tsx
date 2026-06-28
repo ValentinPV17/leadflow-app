@@ -5,7 +5,7 @@ import type { CampaignPayload } from '../App'
 import {
   Zap, LogOut, ArrowLeft, Download, ExternalLink,
   Mail, Building2, Users, Loader2, ChevronLeft, ChevronRight,
-  CheckCircle2, XCircle, Search, History, BarChart2
+  CheckCircle2, XCircle, Search, History
 } from 'lucide-react'
 
 interface Props {
@@ -79,6 +79,8 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
   const emailCount = result.leads.filter(l => l.email).length
   const hubspotCount = result.leads.filter(l => (l as any).inHubSpot).length
   const emailPct = result.leads.length > 0 ? Math.round((emailCount / result.leads.length) * 100) : 0
+  const savedCount = result.savedCount ?? result.leads.filter(l => l.isFromAccount).length
+  const newCount = result.newCount ?? (result.leads.length - savedCount)
 
   return (
     <div className="min-h-screen">
@@ -142,7 +144,7 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-3 gap-3 animate-fade-up stagger-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-fade-up stagger-1">
           <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-7 h-7 rounded-lg bg-slate-700/60 flex items-center justify-center">
@@ -150,15 +152,36 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               </div>
               <span className="text-xs text-slate-500 font-medium">Total leads</span>
             </div>
-            <p className="text-2xl font-bold text-white">{result.total.toLocaleString()}</p>
+            <p className="text-2xl font-bold text-white">{result.leads.length}</p>
             <div className="flex flex-wrap gap-1 mt-2">
-              {icp.payload.countries.slice(0, 2).map(c => (
+              {icp.payload.countries.slice(0, 1).map(c => (
                 <span key={c} className="text-[10px] bg-slate-700/60 border border-slate-600/40 text-slate-400 rounded px-1.5 py-0.5">{c}</span>
               ))}
-              {icp.payload.industries.slice(0, 1).map(i => (
-                <span key={i} className="text-[10px] bg-slate-700/60 border border-slate-600/40 text-slate-400 rounded px-1.5 py-0.5">{i}</span>
-              ))}
             </div>
+          </div>
+
+          {/* Guardados en tu cuenta */}
+          <div className="bg-cyan-500/8 border border-cyan-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-cyan-500/15 border border-cyan-500/20 flex items-center justify-center">
+                <Zap size={13} className="text-cyan-400" />
+              </div>
+              <span className="text-xs text-slate-500 font-medium">Tu cuenta Apollo</span>
+            </div>
+            <p className="text-2xl font-bold text-cyan-400">{savedCount}</p>
+            <p className="text-[10px] text-slate-600 mt-2">Sin costo de créditos</p>
+          </div>
+
+          {/* Nuevos */}
+          <div className="bg-violet-500/8 border border-violet-500/20 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-7 h-7 rounded-lg bg-violet-500/15 border border-violet-500/20 flex items-center justify-center">
+                <Search size={13} className="text-violet-400" />
+              </div>
+              <span className="text-xs text-slate-500 font-medium">Nuevos contactos</span>
+            </div>
+            <p className="text-2xl font-bold text-violet-400">{newCount}</p>
+            <p className="text-[10px] text-slate-600 mt-2">Buscados en Apollo</p>
           </div>
 
           <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
@@ -166,33 +189,15 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               <div className="w-7 h-7 rounded-lg bg-emerald-500/15 border border-emerald-500/20 flex items-center justify-center">
                 <Mail size={13} className="text-emerald-400" />
               </div>
-              <span className="text-xs text-slate-500 font-medium">Con email verificado</span>
+              <span className="text-xs text-slate-500 font-medium">Con email</span>
             </div>
             <p className="text-2xl font-bold text-emerald-400">{emailCount}</p>
             <div className="mt-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] text-slate-600">{emailPct}% del total</span>
-              </div>
               <div className="h-1 bg-slate-700/50 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full transition-all duration-700"
-                  style={{ width: `${emailPct}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-full" style={{ width: `${emailPct}%` }} />
               </div>
+              <span className="text-[10px] text-slate-600">{emailPct}% del total</span>
             </div>
-          </div>
-
-          <div className="bg-slate-800/40 border border-slate-700/30 rounded-xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-7 h-7 rounded-lg bg-orange-500/15 border border-orange-500/20 flex items-center justify-center">
-                <BarChart2 size={13} className="text-orange-400" />
-              </div>
-              <span className="text-xs text-slate-500 font-medium">Nuevos en HubSpot</span>
-            </div>
-            <p className="text-2xl font-bold text-orange-400">{result.leads.length - hubspotCount}</p>
-            <p className="text-[10px] text-slate-600 mt-2">
-              {hubspotCount > 0 ? `${hubspotCount} ya en CRM` : 'Ninguno en CRM aún'}
-            </p>
           </div>
         </div>
 
@@ -236,8 +241,11 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
                               {initials}
                             </div>
                             <div className="min-w-0">
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-white font-medium text-xs truncate">{displayName}</span>
+                                {lead.isFromAccount && (
+                                  <span className="flex-shrink-0 text-[9px] font-semibold bg-cyan-500/15 border border-cyan-500/25 text-cyan-400 rounded px-1.5 py-0.5">Tu cuenta</span>
+                                )}
                                 {(lead as any).inHubSpot && (
                                   <span className="flex-shrink-0 text-[9px] font-semibold bg-orange-500/15 border border-orange-500/25 text-orange-400 rounded px-1.5 py-0.5">CRM</span>
                                 )}

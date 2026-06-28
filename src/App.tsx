@@ -242,7 +242,7 @@ export default function App() {
         <Results
           user={user!}
           payload={lastPayload!}
-          result={apolloResult ?? { leads: [], total: 0, page: 1, per_page: 25 }}
+          result={apolloResult ?? { leads: [], total: 0, page: 1, per_page: 25, savedCount: 0, newCount: 0 }}
           isLoading={isSearching}
           onLoadPage={handleLoadPage}
           onNewCampaign={() => setScreen('dashboard')}
