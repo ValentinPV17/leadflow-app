@@ -10,8 +10,9 @@ import Results from './pages/Results'
 import History from './pages/History'
 import Integrations from './pages/Integrations'
 import SwipeLeads from './pages/SwipeLeads'
+import Credits, { recordCreditUsage } from './pages/Credits'
 
-export type AppScreen = 'login' | 'dashboard' | 'results' | 'history' | 'integrations' | 'swipe'
+export type AppScreen = 'login' | 'dashboard' | 'results' | 'history' | 'integrations' | 'swipe' | 'credits'
 
 export interface CampaignPayload {
   tenant_id: string
@@ -124,6 +125,15 @@ export default function App() {
       setApolloResult(result)
       saveCache('lf_result', result)
       saveCache('lf_payload', payload)
+
+      // Record credit usage for tracker
+      recordCreditUsage({
+        date: new Date().toISOString(),
+        campaignName: payload.campaign_name,
+        savedCount: result.savedCount,
+        newCount: result.newCount,
+        total: result.leads.length,
+      })
 
       // Persist campaign to Supabase
       const icpSummary = [
@@ -253,6 +263,7 @@ export default function App() {
           onHistory={() => setScreen('history')}
           onIntegrations={() => setScreen('integrations')}
           onSwipe={() => setScreen('swipe')}
+          onCredits={() => setScreen('credits')}
           hasResults={!!apolloResult}
           onResumeResults={() => setScreen('results')}
         />
@@ -283,6 +294,14 @@ export default function App() {
     case 'integrations':
       return (
         <Integrations
+          user={user!}
+          onLogout={handleLogout}
+          onBack={() => setScreen('dashboard')}
+        />
+      )
+    case 'credits':
+      return (
+        <Credits
           user={user!}
           onLogout={handleLogout}
           onBack={() => setScreen('dashboard')}

@@ -75,11 +75,12 @@ interface Props {
   onSwipe: () => void
   hasResults?: boolean
   onResumeResults?: () => void
+  onCredits?: () => void
 }
 
 type Mode = 'ai' | 'manual'
 
-export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, onIntegrations, onSwipe, hasResults, onResumeResults }: Props) {
+export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, onIntegrations, onSwipe, hasResults, onResumeResults, onCredits }: Props) {
   const [mode, setMode] = useState<Mode>('ai')
   const [aiText, setAiText] = useState('')
   const [isParsing, setIsParsing] = useState(false)
@@ -292,6 +293,13 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
                   >
                     <Settings size={13} className="text-slate-500" />
                     Integraciones
+                  </button>
+                  <button
+                    onClick={() => { setConfigOpen(false); onCredits?.() }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors border-t border-slate-700/30"
+                  >
+                    <Zap size={13} className="text-violet-400" />
+                    Tracker de créditos
                   </button>
                 </div>
               )}
