@@ -9,6 +9,45 @@ import { calculateMatchScore, formatEmployeeCount } from '../lib/matchScore'
 
 type SwipeFilter = 'all' | 'account' | 'new' | 'hubspot'
 
+function buildMatchReasons(lead: ApolloLead, icp: CampaignPayload['icp']['payload']): string[] {
+  const reasons: string[] = []
+  const titleLower = (lead.title ?? '').toLowerCase()
+  const industryLower = (lead.organization?.industry ?? '').toLowerCase()
+
+  const titleMatch = icp.titles.find(t => titleLower.includes(t.toLowerCase()) || t.toLowerCase().includes(titleLower.split(' ')[0]))
+  if (titleMatch) reasons.push(`Cargo: ${lead.title}`)
+
+  const industryMatch = icp.industries.find(i => industryLower.includes(i.toLowerCase()) || i.toLowerCase().includes(industryLower.split(' ')[0]))
+  if (industryMatch) reasons.push(`Industria: ${lead.organization?.industry}`)
+
+  const countryMatch = icp.countries.find(c => (lead.country ?? '').toLowerCase().includes(c.toLowerCase().replace('é', 'e').replace('é', 'e')))
+  if (countryMatch) reasons.push(`País: ${lead.country}`)
+
+  const emp = lead.organization?.estimated_num_employees ?? 0
+  if (emp > 0) {
+    const empMatch = icp.employee_ranges.find(r => {
+      const [min, max] = r.split(',').map(Number)
+      return emp >= min && emp <= (max || 999999)
+    })
+    if (empMatch) reasons.push(`Tamaño: ${formatEmployeeCount(emp)} empleados`)
+  }
+
+  return reasons.slice(0, 3)
+}
+
+function buildDescription(lead: ApolloLead): string | undefined {
+  const raw = lead as any
+  const desc = raw.organization?.short_description || raw.organization?.description || raw.employment_history?.[0]?.description
+  if (desc && desc.length > 10) return desc.length > 120 ? desc.slice(0, 117) + '...' : desc
+
+  // Fallback: compose from known fields
+  const parts: string[] = []
+  if (lead.organization?.industry) parts.push(`Empresa de ${lead.organization.industry}`)
+  if (lead.organization?.estimated_num_employees) parts.push(`con ${formatEmployeeCount(lead.organization.estimated_num_employees)} empleados`)
+  if (lead.organization?.primary_domain) parts.push(`· ${lead.organization.primary_domain}`)
+  return parts.length > 0 ? parts.join(' ') : undefined
+}
+
 function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']): Lead {
   const domain = lead.organization?.primary_domain
     || lead.organization?.website_url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0]
@@ -22,6 +61,8 @@ function apolloToLead(lead: ApolloLead, icp: CampaignPayload['icp']['payload']):
     employeeCount: formatEmployeeCount(lead.organization?.estimated_num_employees ?? null),
     location: [lead.city, lead.country].filter(Boolean).join(', ') || 'N/A',
     logoUrl: domain ? `/api/logo?domain=${domain}` : undefined,
+    description: buildDescription(lead),
+    matchReasons: buildMatchReasons(lead, icp),
     matchScore: calculateMatchScore(lead, {
       titles: icp.titles,
       industries: icp.industries,

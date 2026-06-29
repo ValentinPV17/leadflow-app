@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { motion, useMotionValue, useTransform, useAnimation } from 'framer-motion'
-import { MapPin, Users, Briefcase, Zap, X, Heart } from 'lucide-react'
+import { MapPin, Users, Briefcase, Zap, X, Heart, CheckCircle2 } from 'lucide-react'
 
 export type Lead = {
   id: string
@@ -12,6 +12,8 @@ export type Lead = {
   location: string
   matchScore: number
   logoUrl?: string
+  description?: string
+  matchReasons?: string[]
 }
 
 interface Props {
@@ -174,18 +176,23 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }
 
         {/* Bottom gradient overlay */}
         <div
-          className="absolute inset-x-0 bottom-0 z-10 px-5 pb-5 pt-16"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.92) 0%, rgba(0,0,0,0.5) 60%, transparent 100%)' }}
+          className="absolute inset-x-0 bottom-0 z-10 px-5 pb-5 pt-20"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.96) 0%, rgba(0,0,0,0.6) 55%, transparent 100%)' }}
         >
           {/* Name + title */}
-          <h2 className="text-white text-2xl font-black leading-tight">{lead.contactName}</h2>
-          <p className="text-white/60 text-sm mt-0.5 flex items-center gap-1.5">
-            <Briefcase size={11} className="text-white/30 flex-shrink-0" />
+          <h2 className="text-white text-xl font-black leading-tight">{lead.contactName}</h2>
+          <p className="text-white/60 text-xs mt-0.5 flex items-center gap-1.5">
+            <Briefcase size={10} className="text-white/30 flex-shrink-0" />
             <span className="truncate">{lead.title}</span>
           </p>
 
+          {/* Company description */}
+          {lead.description && (
+            <p className="text-white/40 text-[11px] mt-2 leading-relaxed line-clamp-2">{lead.description}</p>
+          )}
+
           {/* Divider */}
-          <div className="h-px bg-white/10 my-3" />
+          <div className="h-px bg-white/10 my-2.5" />
 
           {/* Company + pills */}
           <div className="flex items-center gap-2 flex-wrap">
@@ -205,8 +212,20 @@ export default function LeadCard({ lead, isTop, stackIndex, onAccept, onReject }
             </div>
           </div>
 
+          {/* Match reasons */}
+          {lead.matchReasons && lead.matchReasons.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap gap-1.5">
+              {lead.matchReasons.map((reason, i) => (
+                <div key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  <CheckCircle2 size={9} className="text-emerald-400 flex-shrink-0" />
+                  <span className="text-[10px] text-emerald-300">{reason}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* ICP bar */}
-          <div className="mt-3">
+          <div className="mt-2.5">
             <div className="h-1 bg-white/10 rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full"
