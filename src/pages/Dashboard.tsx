@@ -248,20 +248,17 @@ export default function Dashboard({ user, onLogout, onCampaignSent, onHistory, o
             <span className="text-sm font-bold text-white tracking-tight">LeadFlow</span>
           </div>
           <nav className="flex items-center gap-1.5">
-            {/* Match counter badge */}
-            {matchCount !== null && matchCount > 0 && (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <Zap size={11} className="text-emerald-400 fill-emerald-400" />
-                <span className="text-[11px] font-bold text-emerald-400">{matchCount} matches</span>
-              </div>
-            )}
-
             <button
               onClick={onSwipe}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-emerald-500/15 to-cyan-500/15 border border-emerald-500/25 text-emerald-300 rounded-lg hover:from-emerald-500/25 hover:to-cyan-500/25 transition-all"
             >
               <span>✦</span>
               <span className="hidden sm:inline">Match:</span>
+              {matchCount !== null && matchCount > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/30 border border-emerald-400/40 text-[10px] font-bold text-emerald-300 leading-none">
+                  {matchCount}
+                </span>
+              )}
             </button>
 
             <button
