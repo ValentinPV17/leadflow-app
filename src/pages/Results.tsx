@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import type { ApolloLead, ApolloSearchResult } from '../lib/apollo'
 import type { CampaignPayload } from '../App'
@@ -76,6 +76,18 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
   const [sortCol, setSortCol] = useState<SortCol | null>(null)
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [search, setSearch] = useState('')
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) {
+        setExportOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
 
   const handleSort = (col: SortCol) => {
     if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -134,6 +146,13 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
       return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
     })
 
+  const exportGroups = [
+    { key: 'all', label: 'Todos', leads: result.leads, count: result.leads.length },
+    { key: 'account', label: 'Tu cuenta', leads: result.leads.filter(l => l.isFromAccount), count: savedCount },
+    { key: 'new', label: 'Nuevos', leads: result.leads.filter(l => !l.isFromAccount && !(l as any).inHubSpot), count: trueNewCount },
+    { key: 'hubspot', label: 'HubSpot', leads: result.leads.filter(l => (l as any).inHubSpot), count: hubspotCount },
+  ]
+
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -155,13 +174,32 @@ export default function Results({ user, payload, result, isLoading, onLoadPage, 
               <History size={13} />
               <span className="hidden sm:inline">Historial</span>
             </button>
-            <button
-              onClick={() => exportCSV(result.leads, payload.campaign_name)}
-              disabled={result.leads.length === 0}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <Download size={13} /> Exportar CSV
-            </button>
+
+            {/* Export dropdown */}
+            <div ref={exportRef} className="relative">
+              <button
+                onClick={() => setExportOpen(o => !o)}
+                disabled={result.leads.length === 0}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-500/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Download size={13} /> Exportar CSV <ChevronDown size={11} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {exportOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-44 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  {exportGroups.map(g => (
+                    <button
+                      key={g.key}
+                      onClick={() => { exportCSV(g.leads, `${payload.campaign_name}_${g.label}`); setExportOpen(false) }}
+                      disabled={g.count === 0}
+                      className="w-full flex items-center justify-between px-3 py-2.5 text-xs text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    >
+                      <span>{g.label}</span>
+                      <span className="text-slate-500">{g.count}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button
               onClick={onSwipe}
               disabled={result.leads.length === 0}

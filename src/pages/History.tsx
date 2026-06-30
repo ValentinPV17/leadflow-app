@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import {
   Zap, LogOut, ArrowLeft, Calendar, Globe, Building2,
   ChevronRight, Loader2, RotateCcw, Download, Inbox,
-  Mail, Users, TrendingUp, CheckCircle2, ExternalLink
+  Mail, Users, TrendingUp, CheckCircle2, ExternalLink, ChevronDown,
+  Search, XCircle, ChevronUp
 } from 'lucide-react'
 
 interface Campaign {
@@ -30,6 +31,7 @@ interface Lead {
   company_name: string | null
   company_domain: string | null
   country: string | null
+  raw?: { isFromAccount?: boolean }
 }
 
 interface Props {
@@ -78,6 +80,57 @@ export default function History({ user, onLogout, onNewCampaign, onRerunCampaign
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null)
   const [leads, setLeads] = useState<Lead[]>([])
   const [loadingLeads, setLoadingLeads] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
+  const exportRef = useRef<HTMLDivElement>(null)
+  const [search, setSearch] = useState('')
+  const [histFilter, setHistFilter] = useState<'all' | 'account' | 'new'>('all')
+  const [sortCol, setSortCol] = useState<'name' | 'company' | 'email' | null>(null)
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc')
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (exportRef.current && !exportRef.current.contains(e.target as Node)) setExportOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [])
+
+  const handleSort = (col: 'name' | 'company' | 'email') => {
+    if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
+    else { setSortCol(col); setSortDir('asc') }
+  }
+
+  const accountLeads = leads.filter(l => l.raw?.isFromAccount)
+  const newLeads = leads.filter(l => !l.raw?.isFromAccount)
+
+  const filteredLeads = leads
+    .filter(l => {
+      if (histFilter === 'account') return l.raw?.isFromAccount
+      if (histFilter === 'new') return !l.raw?.isFromAccount
+      return true
+    })
+    .filter(l => {
+      if (!search.trim()) return true
+      const q = search.toLowerCase()
+      const name = (l.full_name || `${l.first_name} ${l.last_name}`).toLowerCase()
+      return name.includes(q) || (l.title ?? '').toLowerCase().includes(q) ||
+        (l.company_name ?? '').toLowerCase().includes(q) || (l.email ?? '').toLowerCase().includes(q)
+    })
+    .sort((a, b) => {
+      if (!sortCol) return 0
+      let va = '', vb = ''
+      if (sortCol === 'name') {
+        va = (a.full_name || `${a.first_name} ${a.last_name}`).toLowerCase()
+        vb = (b.full_name || `${b.first_name} ${b.last_name}`).toLowerCase()
+      } else if (sortCol === 'company') {
+        va = (a.company_name ?? '').toLowerCase()
+        vb = (b.company_name ?? '').toLowerCase()
+      } else if (sortCol === 'email') {
+        va = a.email ? '1' : '0'
+        vb = b.email ? '1' : '0'
+      }
+      return sortDir === 'asc' ? va.localeCompare(vb) : vb.localeCompare(va)
+    })
 
   useEffect(() => {
     loadCampaigns()
@@ -192,13 +245,40 @@ export default function History({ user, onLogout, onNewCampaign, onRerunCampaign
                 >
                   <RotateCcw size={12} /> Re-lanzar
                 </button>
-                <button
-                  onClick={() => exportLeadsCSV(leads, selectedCampaign.name)}
-                  disabled={leads.length === 0}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-500/25 transition-all disabled:opacity-40"
-                >
-                  <Download size={12} /> Exportar CSV
-                </button>
+                {/* Export dropdown */}
+                <div ref={exportRef} className="relative">
+                  <button
+                    onClick={() => setExportOpen(o => !o)}
+                    disabled={leads.length === 0}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-medium rounded-lg hover:bg-emerald-500/25 transition-all disabled:opacity-40"
+                  >
+                    <Download size={12} /> Exportar CSV <ChevronDown size={11} className={`transition-transform ${exportOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {exportOpen && (() => {
+                    const accountLeads = leads.filter(l => l.raw?.isFromAccount)
+                    const newLeads = leads.filter(l => !l.raw?.isFromAccount)
+                    const groups = [
+                      { label: 'Todos', subset: leads },
+                      { label: 'Tu cuenta', subset: accountLeads },
+                      { label: 'Nuevos', subset: newLeads },
+                    ]
+                    return (
+                      <div className="absolute right-0 top-full mt-1.5 w-44 bg-slate-900 border border-slate-700/60 rounded-xl shadow-2xl z-50 overflow-hidden">
+                        {groups.map(g => (
+                          <button
+                            key={g.label}
+                            onClick={() => { exportLeadsCSV(g.subset, `${selectedCampaign.name}_${g.label}`); setExportOpen(false) }}
+                            disabled={g.subset.length === 0}
+                            className="w-full flex items-center justify-between px-3 py-2.5 text-xs text-slate-300 hover:bg-slate-800/70 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          >
+                            <span>{g.label}</span>
+                            <span className="text-slate-500">{g.subset.length}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
             </div>
 
@@ -262,72 +342,131 @@ export default function History({ user, onLogout, onNewCampaign, onRerunCampaign
                   <p className="text-sm">Sin leads guardados para esta campaña</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-700/50 bg-slate-900/60">
-                        <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Nombre</th>
-                        <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Cargo</th>
-                        <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Empresa</th>
-                        <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">Email</th>
-                        <th className="text-left px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">País</th>
-                        <th className="text-center px-4 py-3.5 text-slate-500 font-semibold tracking-wide uppercase text-[10px]">LinkedIn</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {leads.map((lead) => {
-                        const displayName = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim()
-                        const avatarColor = getAvatarColor(lead.first_name || displayName)
-                        const initials = ((lead.first_name?.[0] ?? '') + (lead.last_name?.[0] ?? '')).toUpperCase() || '?'
-                        return (
-                          <tr key={lead.id} className="border-b border-slate-700/20 hover:bg-slate-700/20 transition-colors">
-                            <td className="px-4 py-3.5 whitespace-nowrap">
-                              <div className="flex items-center gap-2.5">
-                                <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${avatarColor}`}>
-                                  {initials}
+                <>
+                  {/* Search + filter bar */}
+                  <div className="px-4 py-3 border-b border-slate-700/40 bg-slate-900/40 space-y-2.5">
+                    <div className="relative">
+                      <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+                      <input
+                        value={search}
+                        onChange={e => setSearch(e.target.value)}
+                        placeholder="Buscar por nombre, cargo, empresa o email..."
+                        className="w-full pl-8 pr-4 py-2 bg-slate-800/60 border border-slate-700/50 rounded-lg text-xs text-white placeholder-slate-500 outline-none focus:border-emerald-400/40 transition-colors"
+                      />
+                      {search && (
+                        <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
+                          <XCircle size={13} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {([
+                        { key: 'all' as const, label: `Todos (${leads.length})` },
+                        { key: 'account' as const, label: `Tu cuenta (${accountLeads.length})`, color: 'cyan' },
+                        { key: 'new' as const, label: `Nuevos (${newLeads.length})`, color: 'violet' },
+                      ]).map(f => (
+                        <button
+                          key={f.key}
+                          onClick={() => setHistFilter(f.key)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                            histFilter === f.key
+                              ? f.color === 'cyan' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                                : f.color === 'violet' ? 'bg-violet-500/20 text-violet-300 border border-violet-500/30'
+                                : 'bg-slate-700/60 text-white border border-slate-600/50'
+                              : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800/60 border border-transparent'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-700/50 bg-slate-900/60">
+                          {([
+                            { col: 'name' as const, label: 'Contacto' },
+                            { col: 'company' as const, label: 'Empresa' },
+                            { col: 'email' as const, label: 'Email' },
+                          ]).map(({ col, label }) => (
+                            <th key={col} className="text-left px-4 py-3">
+                              <button
+                                onClick={() => handleSort(col)}
+                                className="flex items-center gap-1 text-xs font-medium text-slate-400 hover:text-white transition-colors group"
+                              >
+                                {label}
+                                <span className="text-slate-600 group-hover:text-slate-400">
+                                  {sortCol === col
+                                    ? sortDir === 'asc' ? <ChevronUp size={11} className="text-emerald-400" /> : <ChevronDown size={11} className="text-emerald-400" />
+                                    : <ChevronUp size={11} className="opacity-30" />}
+                                </span>
+                              </button>
+                            </th>
+                          ))}
+                          <th className="text-left px-4 py-3 text-slate-400 font-medium text-xs">País</th>
+                          <th className="text-center px-4 py-3 text-slate-400 font-medium text-xs">LinkedIn</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredLeads.map((lead) => {
+                          const displayName = lead.full_name || `${lead.first_name} ${lead.last_name}`.trim()
+                          const avatarColor = getAvatarColor(lead.first_name || displayName)
+                          const initials = ((lead.first_name?.[0] ?? '') + (lead.last_name?.[0] ?? '')).toUpperCase() || '?'
+                          return (
+                            <tr key={lead.id} className="border-b border-slate-700/20 hover:bg-slate-700/20 transition-colors">
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div className={`w-7 h-7 rounded-full border flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${avatarColor}`}>
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="text-white font-medium">{displayName}</span>
+                                      {lead.raw?.isFromAccount && (
+                                        <span className="text-[9px] font-semibold bg-cyan-500/15 border border-cyan-500/25 text-cyan-400 rounded px-1.5 py-0.5">Tu cuenta</span>
+                                      )}
+                                    </div>
+                                    <span className="text-slate-500 text-[11px]">{lead.title ?? '—'}</span>
+                                  </div>
                                 </div>
-                                <span className="text-white font-medium">{displayName}</span>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3.5 text-slate-300 max-w-44">
-                              <span className="truncate block">{lead.title ?? '—'}</span>
-                            </td>
-                            <td className="px-4 py-3.5 max-w-40">
-                              <div className="flex items-center gap-1.5">
-                                <Building2 size={11} className="flex-shrink-0 text-slate-600" />
-                                <span className="truncate text-slate-300">{lead.company_name ?? '—'}</span>
-                              </div>
-                              {lead.company_domain && (
-                                <span className="text-[10px] text-slate-600 ml-4">{lead.company_domain}</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3.5 max-w-48">
-                              {lead.email ? (
-                                <div className="flex items-center gap-1">
-                                  <CheckCircle2 size={11} className="text-emerald-400 flex-shrink-0" />
-                                  <a href={`mailto:${lead.email}`} className="text-emerald-400 hover:underline truncate block">
-                                    {lead.email}
+                              </td>
+                              <td className="px-4 py-3 max-w-40">
+                                <div className="flex items-center gap-1.5">
+                                  <Building2 size={11} className="flex-shrink-0 text-slate-600" />
+                                  <span className="truncate text-slate-300">{lead.company_name ?? '—'}</span>
+                                </div>
+                                {lead.company_domain && (
+                                  <span className="text-[10px] text-slate-600 ml-4">{lead.company_domain}</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 max-w-48">
+                                {lead.email ? (
+                                  <div className="flex items-center gap-1">
+                                    <CheckCircle2 size={11} className="text-emerald-400 flex-shrink-0" />
+                                    <a href={`mailto:${lead.email}`} className="text-emerald-400 hover:underline truncate block">{lead.email}</a>
+                                  </div>
+                                ) : (
+                                  <span className="text-slate-600">No disponible</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{lead.country ?? '—'}</td>
+                              <td className="px-4 py-3 text-center">
+                                {lead.person_linkedin ? (
+                                  <a href={lead.person_linkedin} target="_blank" rel="noreferrer"
+                                    className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-all">
+                                    <ExternalLink size={11} />
                                   </a>
-                                </div>
-                              ) : (
-                                <span className="text-slate-600">No disponible</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap">{lead.country ?? '—'}</td>
-                            <td className="px-4 py-3.5 text-center">
-                              {lead.person_linkedin ? (
-                                <a href={lead.person_linkedin} target="_blank" rel="noreferrer"
-                                  className="inline-flex items-center gap-1 text-blue-400 hover:text-blue-300 text-xs transition-colors">
-                                  <ExternalLink size={11} /> Ver
-                                </a>
-                              ) : <span className="text-slate-600">—</span>}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                                ) : <span className="text-slate-600">—</span>}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
               )}
             </div>
           </div>
